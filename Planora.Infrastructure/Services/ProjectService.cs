@@ -53,8 +53,7 @@ public class ProjectService : IProjectService
 
     public async Task<ProjectDto?> GetProjectByIdAsync(Guid id)
     {
-        var projects = await _unitOfWork.Projects.FindAsync(p => p.Id == id);
-        var project = projects.FirstOrDefault();
+        var project = await _unitOfWork.Projects.GetByIdAsync(id);
         if (project == null) return null;
 
         var dto = _mapper.Map<ProjectDto>(project);
@@ -79,8 +78,7 @@ public class ProjectService : IProjectService
 
     public async Task<ProjectDto> UpdateProjectAsync(Guid id, UpdateProjectDto dto)
     {
-        var projects = await _unitOfWork.Projects.FindAsync(p => p.Id == id);
-        var project = projects.FirstOrDefault() ?? throw new KeyNotFoundException("Project not found.");
+        var project = await _unitOfWork.Projects.GetByIdAsync(id) ?? throw new KeyNotFoundException("Project not found.");
 
         _mapper.Map(dto, project);
         project.UpdatedAt = DateTime.UtcNow;
@@ -92,8 +90,7 @@ public class ProjectService : IProjectService
 
     public async Task DeleteProjectAsync(Guid id)
     {
-        var projects = await _unitOfWork.Projects.FindAsync(p => p.Id == id);
-        var project = projects.FirstOrDefault() ?? throw new KeyNotFoundException("Project not found.");
+        var project = await _unitOfWork.Projects.GetByIdAsync(id) ?? throw new KeyNotFoundException("Project not found.");
 
         project.IsDeleted = true;
         project.UpdatedAt = DateTime.UtcNow;
