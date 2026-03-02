@@ -306,7 +306,7 @@ namespace Planora.Infrastructure.Migrations
                         column: x => x.SprintId,
                         principalTable: "Sprints",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
+                        onDelete: ReferentialAction.NoAction);
                 });
 
             migrationBuilder.CreateTable(
