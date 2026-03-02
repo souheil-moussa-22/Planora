@@ -641,7 +641,7 @@ namespace Planora.Infrastructure.Migrations
                     b.HasOne("Planora.Domain.Entities.Sprint", "Sprint")
                         .WithMany("Tasks")
                         .HasForeignKey("SprintId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.Navigation("AssignedTo");
 
