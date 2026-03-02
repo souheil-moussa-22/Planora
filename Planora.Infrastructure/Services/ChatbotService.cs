@@ -40,11 +40,12 @@ public class ChatbotService : IChatbotService
             max_tokens = 500
         };
 
-        _httpClient.DefaultRequestHeaders.Clear();
-        _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
+        using var request = new HttpRequestMessage(HttpMethod.Post, "https://api.openai.com/v1/chat/completions");
+        request.Headers.Add("Authorization", $"Bearer {apiKey}");
 
         var content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
-        var response = await _httpClient.PostAsync("https://api.openai.com/v1/chat/completions", content);
+        request.Content = content;
+        var response = await _httpClient.SendAsync(request);
 
         if (!response.IsSuccessStatusCode)
             return "Unable to get a response from the AI assistant at this time.";

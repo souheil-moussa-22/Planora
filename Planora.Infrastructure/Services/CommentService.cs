@@ -44,7 +44,9 @@ public class CommentService : ICommentService
         var comment = await _unitOfWork.Comments.GetByIdAsync(id) ?? throw new KeyNotFoundException("Comment not found.");
         if (comment.AuthorId != userId) throw new UnauthorizedAccessException("You cannot delete this comment.");
 
-        _unitOfWork.Comments.Delete(comment);
+        comment.IsDeleted = true;
+        comment.UpdatedAt = DateTime.UtcNow;
+        _unitOfWork.Comments.Update(comment);
         await _unitOfWork.SaveChangesAsync();
     }
 }
