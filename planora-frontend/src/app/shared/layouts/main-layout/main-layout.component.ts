@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { NavbarComponent } from '../../components/navbar/navbar.component';
 import { SidebarComponent } from '../../components/sidebar/sidebar.component';
@@ -8,24 +8,29 @@ import { SidebarComponent } from '../../components/sidebar/sidebar.component';
   standalone: true,
   imports: [RouterOutlet, NavbarComponent, SidebarComponent],
   template: `
-    <app-navbar></app-navbar>
-    <div class="layout-container">
-      <app-sidebar></app-sidebar>
-      <main class="content">
-        <router-outlet></router-outlet>
-      </main>
-    </div>
+    <app-navbar (toggleSidebar)="sidebarCollapsed.set(!sidebarCollapsed())"></app-navbar>
+    <app-sidebar [collapsed]="sidebarCollapsed()"></app-sidebar>
+    <main class="main-content" [class.collapsed]="sidebarCollapsed()">
+      <router-outlet></router-outlet>
+    </main>
   `,
   styles: [`
-    .layout-container {
-      display: flex;
+    .main-content {
       margin-top: 64px;
+      margin-left: 240px;
       min-height: calc(100vh - 64px);
+      background: #f9fafb;
+      transition: margin-left .2s ease;
     }
-    .content {
-      flex: 1;
-      overflow: auto;
+    .main-content.collapsed {
+      margin-left: 64px;
+    }
+    @media (max-width: 768px) {
+      .main-content { margin-left: 64px; }
+      .main-content.collapsed { margin-left: 0; }
     }
   `]
 })
-export class MainLayoutComponent {}
+export class MainLayoutComponent {
+  sidebarCollapsed = signal(false);
+}

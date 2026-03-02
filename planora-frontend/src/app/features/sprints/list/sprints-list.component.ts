@@ -14,6 +14,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { Sprint, SprintStatus } from '../../../core/models';
 import { LoadingComponent } from '../../../shared/components/loading/loading.component';
 import { SprintFormDialogComponent } from './sprint-form-dialog.component';
+import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-sprints-list',
@@ -21,36 +22,54 @@ import { SprintFormDialogComponent } from './sprint-form-dialog.component';
   imports: [
     CommonModule, RouterLink, MatCardModule, MatTableModule,
     MatButtonModule, MatIconModule, MatProgressBarModule,
-    MatSnackBarModule, MatDialogModule, MatTooltipModule, LoadingComponent
+    MatSnackBarModule, MatDialogModule, MatTooltipModule, LoadingComponent,
+    ConfirmDialogComponent
   ],
   template: `
     <div class="page-container">
       <div class="page-header">
         <div>
-          <button mat-button [routerLink]="['/projects', projectId]">
+          <button mat-button [routerLink]="['/projects', projectId]" class="back-btn">
             <mat-icon>arrow_back</mat-icon> Back to Project
           </button>
           <h1>Sprints</h1>
         </div>
-        <button mat-raised-button color="primary" (click)="openCreate()" *ngIf="canManage">
+        <button mat-raised-button class="primary-btn" (click)="openCreate()" *ngIf="canManage">
           <mat-icon>add</mat-icon> New Sprint
         </button>
       </div>
-      <mat-card>
-        <mat-card-content>
-          <app-loading *ngIf="loading"></app-loading>
-          <table mat-table [dataSource]="sprints" class="full-width-table" *ngIf="!loading">
+
+      <div class="planora-card">
+        <app-loading *ngIf="loading"></app-loading>
+
+        <ng-container *ngIf="!loading">
+          <div *ngIf="sprints.length === 0" class="empty-state">
+            <mat-icon>sprint</mat-icon>
+            <h3>No sprints yet</h3>
+            <p>Create your first sprint to start planning</p>
+          </div>
+
+          <table mat-table [dataSource]="sprints" class="planora-table" *ngIf="sprints.length > 0">
             <ng-container matColumnDef="name">
               <th mat-header-cell *matHeaderCellDef>Name</th>
-              <td mat-cell *matCellDef="let s">{{ s.name }}</td>
+              <td mat-cell *matCellDef="let s">
+                <div class="sprint-name-cell">
+                  <span class="active-dot" *ngIf="s.status === 1" matTooltip="Active sprint"></span>
+                  <span [class.active-text]="s.status === 1">{{ s.name }}</span>
+                </div>
+              </td>
             </ng-container>
             <ng-container matColumnDef="goal">
               <th mat-header-cell *matHeaderCellDef>Goal</th>
-              <td mat-cell *matCellDef="let s">{{ s.goal | slice:0:40 }}{{ s.goal?.length > 40 ? '...' : '' }}</td>
+              <td mat-cell *matCellDef="let s" class="text-secondary">
+                {{ s.goal | slice:0:50 }}{{ (s.goal?.length ?? 0) > 50 ? '…' : '' }}
+              </td>
             </ng-container>
             <ng-container matColumnDef="dates">
               <th mat-header-cell *matHeaderCellDef>Dates</th>
-              <td mat-cell *matCellDef="let s">{{ s.startDate | date:'shortDate' }} – {{ s.endDate | date:'shortDate' }}</td>
+              <td mat-cell *matCellDef="let s" class="text-secondary">
+                {{ s.startDate | date:'MMM d' }} – {{ s.endDate | date:'MMM d, y' }}
+              </td>
             </ng-container>
             <ng-container matColumnDef="status">
               <th mat-header-cell *matHeaderCellDef>Status</th>
@@ -60,50 +79,56 @@ import { SprintFormDialogComponent } from './sprint-form-dialog.component';
             </ng-container>
             <ng-container matColumnDef="tasks">
               <th mat-header-cell *matHeaderCellDef>Tasks</th>
-              <td mat-cell *matCellDef="let s">{{ s.completedTasksCount }}/{{ s.tasksCount }}</td>
+              <td mat-cell *matCellDef="let s">
+                <span class="tasks-badge">{{ s.completedTasksCount }}/{{ s.tasksCount }}</span>
+              </td>
             </ng-container>
             <ng-container matColumnDef="progress">
               <th mat-header-cell *matHeaderCellDef>Progress</th>
               <td mat-cell *matCellDef="let s">
                 <div class="progress-cell">
                   <mat-progress-bar mode="determinate" [value]="s.progressPercentage"></mat-progress-bar>
-                  <span>{{ s.progressPercentage | number:'1.0-0' }}%</span>
+                  <span class="pct">{{ s.progressPercentage | number:'1.0-0' }}%</span>
                 </div>
               </td>
             </ng-container>
             <ng-container matColumnDef="actions">
-              <th mat-header-cell *matHeaderCellDef>Actions</th>
-              <td mat-cell *matCellDef="let s">
-                <button mat-icon-button color="accent" (click)="openEdit(s)" *ngIf="canManage && s.status !== 2" matTooltip="Edit">
+              <th mat-header-cell *matHeaderCellDef></th>
+              <td mat-cell *matCellDef="let s" class="actions-cell">
+                <button mat-icon-button (click)="openEdit(s)" *ngIf="canManage && s.status !== 2" matTooltip="Edit">
                   <mat-icon>edit</mat-icon>
                 </button>
-                <button mat-icon-button color="primary" (click)="closeSprint(s)" *ngIf="canManage && s.status === 1" matTooltip="Close Sprint">
-                  <mat-icon>lock</mat-icon>
+                <button mat-icon-button (click)="closeSprint(s)" *ngIf="canManage && s.status === 1" matTooltip="Close Sprint">
+                  <mat-icon>lock_outline</mat-icon>
                 </button>
-                <button mat-icon-button color="warn" (click)="deleteSprint(s)" *ngIf="canManage" matTooltip="Delete">
-                  <mat-icon>delete</mat-icon>
+                <button mat-icon-button class="delete-btn" (click)="deleteSprint(s)" *ngIf="canManage" matTooltip="Delete">
+                  <mat-icon>delete_outline</mat-icon>
                 </button>
               </td>
             </ng-container>
             <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-            <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-            <tr class="mat-row" *matNoDataRow>
-              <td class="mat-cell" [attr.colspan]="displayedColumns.length" style="text-align:center;padding:24px">No sprints found.</td>
-            </tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;" [class.active-row]="row.status === 1"></tr>
           </table>
-        </mat-card-content>
-      </mat-card>
+        </ng-container>
+      </div>
     </div>
   `,
   styles: [`
-    .page-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px; }
-    h1 { margin: 4px 0 0; }
-    .full-width-table { width: 100%; }
-    .chip { padding: 3px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 500; }
-    .status-planning { background: #e3f2fd; color: #1976d2; }
-    .status-active { background: #e8f5e9; color: #388e3c; }
-    .status-closed { background: #f5f5f5; color: #666; }
-    .progress-cell { display: flex; align-items: center; gap: 8px; min-width: 120px; }
+    .back-btn { color: #6b7280; margin-bottom: 4px; }
+    .primary-btn { background: #4f46e5 !important; color: #fff !important; border-radius: 8px !important; }
+    .actions-cell { text-align: right; white-space: nowrap; }
+    .delete-btn mat-icon { color: #ef4444 !important; }
+    .sprint-name-cell { display: flex; align-items: center; gap: 8px; }
+    .active-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #10b981; flex-shrink: 0; animation: pulse 2s infinite;
+    }
+    .active-text { font-weight: 600; }
+    .active-row td { background: #f0fdf4 !important; }
+    .tasks-badge { font-size: 0.8125rem; color: #374151; font-weight: 500; }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; } 50% { opacity: .5; }
+    }
   `]
 })
 export class SprintsListComponent implements OnInit {
@@ -156,28 +181,50 @@ export class SprintsListComponent implements OnInit {
   }
 
   closeSprint(sprint: Sprint): void {
-    if (!confirm(`Close sprint "${sprint.name}"?`)) return;
-    this.sprintService.closeSprint(sprint.id).subscribe({
-      next: response => {
-        if (response.success) {
-          this.snackBar.open('Sprint closed', 'Close', { duration: 3000 });
-          this.loadSprints();
-        }
-      },
-      error: () => this.snackBar.open('Failed to close sprint', 'Close', { duration: 3000 })
+    const ref = this.dialog.open(ConfirmDialogComponent, {
+      width: '400px',
+      data: {
+        title: 'Close Sprint',
+        message: `Close sprint "${sprint.name}"? This will mark it as finished.`,
+        confirmLabel: 'Close Sprint',
+        danger: false
+      }
+    });
+    ref.afterClosed().subscribe(confirmed => {
+      if (!confirmed) return;
+      this.sprintService.closeSprint(sprint.id).subscribe({
+        next: response => {
+          if (response.success) {
+            this.snackBar.open('Sprint closed', 'Close', { duration: 3000 });
+            this.loadSprints();
+          }
+        },
+        error: () => this.snackBar.open('Failed to close sprint', 'Close', { duration: 3000 })
+      });
     });
   }
 
   deleteSprint(sprint: Sprint): void {
-    if (!confirm(`Delete sprint "${sprint.name}"?`)) return;
-    this.sprintService.deleteSprint(sprint.id).subscribe({
-      next: response => {
-        if (response.success) {
-          this.snackBar.open('Sprint deleted', 'Close', { duration: 3000 });
-          this.loadSprints();
-        }
-      },
-      error: () => this.snackBar.open('Failed to delete sprint', 'Close', { duration: 3000 })
+    const ref = this.dialog.open(ConfirmDialogComponent, {
+      width: '400px',
+      data: {
+        title: 'Delete Sprint',
+        message: `Are you sure you want to delete "${sprint.name}"?`,
+        confirmLabel: 'Delete',
+        danger: true
+      }
+    });
+    ref.afterClosed().subscribe(confirmed => {
+      if (!confirmed) return;
+      this.sprintService.deleteSprint(sprint.id).subscribe({
+        next: response => {
+          if (response.success) {
+            this.snackBar.open('Sprint deleted', 'Close', { duration: 3000 });
+            this.loadSprints();
+          }
+        },
+        error: () => this.snackBar.open('Failed to delete sprint', 'Close', { duration: 3000 })
+      });
     });
   }
 
@@ -186,6 +233,6 @@ export class SprintsListComponent implements OnInit {
   }
 
   getStatusClass(status: SprintStatus): string {
-    return ['status-planning', 'status-active', 'status-closed'][status] ?? '';
+    return ['sprint-planning', 'sprint-active', 'sprint-closed'][status] ?? '';
   }
 }

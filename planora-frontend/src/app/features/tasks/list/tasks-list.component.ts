@@ -15,6 +15,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { Task, TaskStatus, TaskPriority } from '../../../core/models';
 import { LoadingComponent } from '../../../shared/components/loading/loading.component';
 import { TaskFormDialogComponent } from './task-form-dialog.component';
+import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-tasks-list',
@@ -22,28 +23,39 @@ import { TaskFormDialogComponent } from './task-form-dialog.component';
   imports: [
     CommonModule, RouterLink, MatCardModule, MatTableModule,
     MatButtonModule, MatIconModule, MatChipsModule, MatPaginatorModule,
-    MatSnackBarModule, MatDialogModule, MatTooltipModule, LoadingComponent
+    MatSnackBarModule, MatDialogModule, MatTooltipModule, LoadingComponent,
+    ConfirmDialogComponent
   ],
   template: `
     <div class="page-container">
       <div class="page-header">
         <div>
-          <button mat-button [routerLink]="['/projects', projectId]">
+          <button mat-button [routerLink]="['/projects', projectId]" class="back-btn">
             <mat-icon>arrow_back</mat-icon> Back to Project
           </button>
           <h1>Tasks</h1>
         </div>
-        <button mat-raised-button color="primary" (click)="openCreate()">
+        <button mat-raised-button class="primary-btn" (click)="openCreate()">
           <mat-icon>add</mat-icon> New Task
         </button>
       </div>
-      <mat-card>
-        <mat-card-content>
-          <app-loading *ngIf="loading"></app-loading>
-          <table mat-table [dataSource]="tasks" class="full-width-table" *ngIf="!loading">
+
+      <div class="planora-card">
+        <app-loading *ngIf="loading"></app-loading>
+
+        <ng-container *ngIf="!loading">
+          <div *ngIf="tasks.length === 0" class="empty-state">
+            <mat-icon>task_alt</mat-icon>
+            <h3>No tasks yet</h3>
+            <p>Create your first task for this project</p>
+          </div>
+
+          <table mat-table [dataSource]="tasks" class="planora-table" *ngIf="tasks.length > 0">
             <ng-container matColumnDef="title">
               <th mat-header-cell *matHeaderCellDef>Title</th>
-              <td mat-cell *matCellDef="let t">{{ t.title }}</td>
+              <td mat-cell *matCellDef="let t">
+                <a [routerLink]="['/projects', projectId, 'tasks', t.id]" class="planora-link">{{ t.title }}</a>
+              </td>
             </ng-container>
             <ng-container matColumnDef="status">
               <th mat-header-cell *matHeaderCellDef>Status</th>
@@ -58,47 +70,54 @@ import { TaskFormDialogComponent } from './task-form-dialog.component';
               </td>
             </ng-container>
             <ng-container matColumnDef="assignedTo">
-              <th mat-header-cell *matHeaderCellDef>Assigned To</th>
-              <td mat-cell *matCellDef="let t">{{ t.assignedToName || '—' }}</td>
+              <th mat-header-cell *matHeaderCellDef>Assignee</th>
+              <td mat-cell *matCellDef="let t">
+                <span *ngIf="t.assignedToName" class="assignee">
+                  <span class="assignee-avatar">{{ t.assignedToName[0] }}</span>
+                  {{ t.assignedToName }}
+                </span>
+                <span *ngIf="!t.assignedToName" class="text-secondary">Unassigned</span>
+              </td>
             </ng-container>
             <ng-container matColumnDef="dueDate">
               <th mat-header-cell *matHeaderCellDef>Due Date</th>
-              <td mat-cell *matCellDef="let t">{{ t.dueDate ? (t.dueDate | date:'mediumDate') : '—' }}</td>
+              <td mat-cell *matCellDef="let t" class="text-secondary">
+                {{ t.dueDate ? (t.dueDate | date:'mediumDate') : '—' }}
+              </td>
             </ng-container>
             <ng-container matColumnDef="actions">
-              <th mat-header-cell *matHeaderCellDef>Actions</th>
-              <td mat-cell *matCellDef="let t">
-                <button mat-icon-button color="accent" (click)="openEdit(t)" matTooltip="Edit">
+              <th mat-header-cell *matHeaderCellDef></th>
+              <td mat-cell *matCellDef="let t" class="actions-cell">
+                <button mat-icon-button (click)="openEdit(t)" matTooltip="Edit">
                   <mat-icon>edit</mat-icon>
                 </button>
-                <button mat-icon-button color="warn" (click)="deleteTask(t)" *ngIf="canManage" matTooltip="Delete">
-                  <mat-icon>delete</mat-icon>
+                <button mat-icon-button class="delete-btn" (click)="deleteTask(t)" *ngIf="canManage" matTooltip="Delete">
+                  <mat-icon>delete_outline</mat-icon>
                 </button>
               </td>
             </ng-container>
             <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
             <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-            <tr class="mat-row" *matNoDataRow>
-              <td class="mat-cell" [attr.colspan]="displayedColumns.length" style="text-align:center;padding:24px">No tasks found.</td>
-            </tr>
           </table>
+
           <mat-paginator [length]="totalCount" [pageSize]="pageSize" [pageSizeOptions]="[5,10,20]" (page)="onPageChange($event)"></mat-paginator>
-        </mat-card-content>
-      </mat-card>
+        </ng-container>
+      </div>
     </div>
   `,
   styles: [`
-    .page-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px; }
-    h1 { margin: 4px 0 0; }
-    .full-width-table { width: 100%; }
-    .chip { padding: 3px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 500; }
-    .status-todo { background: #e3f2fd; color: #1976d2; }
-    .status-inprogress { background: #fff3e0; color: #f57c00; }
-    .status-done { background: #e8f5e9; color: #388e3c; }
-    .priority-low { background: #f3e5f5; color: #7b1fa2; }
-    .priority-medium { background: #e3f2fd; color: #1565c0; }
-    .priority-high { background: #fff3e0; color: #e65100; }
-    .priority-critical { background: #ffebee; color: #c62828; }
+    .back-btn { color: #6b7280; margin-bottom: 4px; }
+    .primary-btn { background: #4f46e5 !important; color: #fff !important; border-radius: 8px !important; }
+    .actions-cell { text-align: right; white-space: nowrap; }
+    .delete-btn mat-icon { color: #ef4444 !important; }
+    .assignee { display: flex; align-items: center; gap: 8px; }
+    .assignee-avatar {
+      width: 26px; height: 26px; border-radius: 50%;
+      background: linear-gradient(135deg, #4f46e5, #06b6d4);
+      color: #fff; font-size: 0.75rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
   `]
 })
 export class TasksListComponent implements OnInit {
@@ -165,15 +184,26 @@ export class TasksListComponent implements OnInit {
   }
 
   deleteTask(task: Task): void {
-    if (!confirm(`Delete task "${task.title}"?`)) return;
-    this.taskService.deleteTask(task.id).subscribe({
-      next: response => {
-        if (response.success) {
-          this.snackBar.open('Task deleted', 'Close', { duration: 3000 });
-          this.loadTasks();
-        }
-      },
-      error: () => this.snackBar.open('Failed to delete task', 'Close', { duration: 3000 })
+    const ref = this.dialog.open(ConfirmDialogComponent, {
+      width: '400px',
+      data: {
+        title: 'Delete Task',
+        message: `Are you sure you want to delete "${task.title}"?`,
+        confirmLabel: 'Delete',
+        danger: true
+      }
+    });
+    ref.afterClosed().subscribe(confirmed => {
+      if (!confirmed) return;
+      this.taskService.deleteTask(task.id).subscribe({
+        next: response => {
+          if (response.success) {
+            this.snackBar.open('Task deleted', 'Close', { duration: 3000 });
+            this.loadTasks();
+          }
+        },
+        error: () => this.snackBar.open('Failed to delete task', 'Close', { duration: 3000 })
+      });
     });
   }
 
