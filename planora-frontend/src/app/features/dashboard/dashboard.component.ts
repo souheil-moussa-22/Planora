@@ -5,9 +5,10 @@ import { MatCardModule } from '@angular/material/card';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTableModule } from '@angular/material/table';
 import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { DashboardService } from '../../core/services/dashboard.service';
-import { DashboardData, ProjectProgress } from '../../core/models';
+import { DashboardData } from '../../core/models';
 import { LoadingComponent } from '../../shared/components/loading/loading.component';
 
 @Component({
@@ -15,116 +16,208 @@ import { LoadingComponent } from '../../shared/components/loading/loading.compon
   standalone: true,
   imports: [
     CommonModule, RouterLink, MatCardModule, MatProgressBarModule,
-    MatTableModule, MatIconModule, MatSnackBarModule, LoadingComponent
+    MatTableModule, MatIconModule, MatButtonModule, MatSnackBarModule, LoadingComponent
   ],
   template: `
     <div class="page-container">
-      <h1>Dashboard</h1>
+      <div class="page-header">
+        <div>
+          <h1>Dashboard</h1>
+          <p class="text-secondary">Welcome back! Here's what's happening with your projects.</p>
+        </div>
+      </div>
+
       <app-loading *ngIf="loading"></app-loading>
-      <div *ngIf="!loading && data">
+
+      <ng-container *ngIf="!loading && data">
+        <!-- Stats Row -->
         <div class="stats-grid">
-          <mat-card class="stat-card">
-            <mat-card-content>
-              <div class="stat-icon"><mat-icon color="primary">folder</mat-icon></div>
+          <div class="stat-card">
+            <div class="stat-icon-wrap indigo">
+              <mat-icon>folder_open</mat-icon>
+            </div>
+            <div class="stat-body">
               <div class="stat-value">{{ data.totalProjects }}</div>
               <div class="stat-label">Total Projects</div>
-            </mat-card-content>
-          </mat-card>
-          <mat-card class="stat-card">
-            <mat-card-content>
-              <div class="stat-icon"><mat-icon color="accent">sprint</mat-icon></div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon-wrap cyan">
+              <mat-icon>sprint</mat-icon>
+            </div>
+            <div class="stat-body">
               <div class="stat-value">{{ data.activeSprints }}</div>
               <div class="stat-label">Active Sprints</div>
-            </mat-card-content>
-          </mat-card>
-          <mat-card class="stat-card">
-            <mat-card-content>
-              <div class="stat-icon"><mat-icon color="primary">task</mat-icon></div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon-wrap amber">
+              <mat-icon>task_alt</mat-icon>
+            </div>
+            <div class="stat-body">
               <div class="stat-value">{{ data.totalTasks }}</div>
               <div class="stat-label">Total Tasks</div>
-            </mat-card-content>
-          </mat-card>
-          <mat-card class="stat-card">
-            <mat-card-content>
-              <div class="stat-icon"><mat-icon style="color: #4caf50">check_circle</mat-icon></div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon-wrap green">
+              <mat-icon>check_circle</mat-icon>
+            </div>
+            <div class="stat-body">
               <div class="stat-value">{{ data.completedTasks }}</div>
-              <div class="stat-label">Completed Tasks</div>
-            </mat-card-content>
-          </mat-card>
+              <div class="stat-label">Completed</div>
+            </div>
+          </div>
         </div>
 
-        <mat-card class="progress-card">
-          <mat-card-header>
-            <mat-card-title>Overall Progress</mat-card-title>
-          </mat-card-header>
-          <mat-card-content>
-            <div class="progress-row">
-              <span>{{ data.overallProgressPercentage | number:'1.0-0' }}%</span>
-              <mat-progress-bar mode="determinate" [value]="data.overallProgressPercentage" class="progress-bar"></mat-progress-bar>
+        <!-- Progress + Task Breakdown Row -->
+        <div class="two-col">
+          <div class="planora-card">
+            <h3 class="card-title">Overall Progress</h3>
+            <div class="big-progress">
+              <div class="big-pct">{{ data.overallProgressPercentage | number:'1.0-0' }}%</div>
+              <mat-progress-bar mode="determinate" [value]="data.overallProgressPercentage" class="big-bar"></mat-progress-bar>
+              <div class="pct-label">of all tasks completed</div>
             </div>
-            <div class="task-breakdown">
-              <span class="task-chip todo">To Do: {{ data.toDoTasks }}</span>
-              <span class="task-chip inprogress">In Progress: {{ data.inProgressTasks }}</span>
-              <span class="task-chip done">Done: {{ data.completedTasks }}</span>
-            </div>
-          </mat-card-content>
-        </mat-card>
+          </div>
 
-        <mat-card>
-          <mat-card-header>
-            <mat-card-title>Projects Progress</mat-card-title>
-          </mat-card-header>
-          <mat-card-content>
-            <table mat-table [dataSource]="data.projectsProgress" class="full-width-table">
-              <ng-container matColumnDef="projectName">
-                <th mat-header-cell *matHeaderCellDef>Project</th>
-                <td mat-cell *matCellDef="let p">
-                  <a [routerLink]="['/projects', p.projectId]">{{ p.projectName }}</a>
-                </td>
-              </ng-container>
-              <ng-container matColumnDef="totalTasks">
-                <th mat-header-cell *matHeaderCellDef>Total Tasks</th>
-                <td mat-cell *matCellDef="let p">{{ p.totalTasks }}</td>
-              </ng-container>
-              <ng-container matColumnDef="completedTasks">
-                <th mat-header-cell *matHeaderCellDef>Completed</th>
-                <td mat-cell *matCellDef="let p">{{ p.completedTasks }}</td>
-              </ng-container>
-              <ng-container matColumnDef="progress">
-                <th mat-header-cell *matHeaderCellDef>Progress</th>
-                <td mat-cell *matCellDef="let p">
-                  <div class="progress-cell">
-                    <mat-progress-bar mode="determinate" [value]="p.progressPercentage"></mat-progress-bar>
-                    <span class="progress-pct">{{ p.progressPercentage | number:'1.0-0' }}%</span>
-                  </div>
-                </td>
-              </ng-container>
-              <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-              <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-            </table>
-          </mat-card-content>
-        </mat-card>
+          <div class="planora-card">
+            <h3 class="card-title">Task Breakdown</h3>
+            <div class="breakdown-list">
+              <div class="breakdown-item">
+                <span class="chip status-todo">To Do</span>
+                <div class="breakdown-bar-wrap">
+                  <div class="breakdown-bar todo-bar" [style.width.%]="getPercent(data.toDoTasks)"></div>
+                </div>
+                <span class="breakdown-count">{{ data.toDoTasks }}</span>
+              </div>
+              <div class="breakdown-item">
+                <span class="chip status-inprogress">In Progress</span>
+                <div class="breakdown-bar-wrap">
+                  <div class="breakdown-bar inprogress-bar" [style.width.%]="getPercent(data.inProgressTasks)"></div>
+                </div>
+                <span class="breakdown-count">{{ data.inProgressTasks }}</span>
+              </div>
+              <div class="breakdown-item">
+                <span class="chip status-done">Done</span>
+                <div class="breakdown-bar-wrap">
+                  <div class="breakdown-bar done-bar" [style.width.%]="getPercent(data.completedTasks)"></div>
+                </div>
+                <span class="breakdown-count">{{ data.completedTasks }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Projects Progress Table -->
+        <div class="planora-card">
+          <div class="card-header-row">
+            <h3 class="card-title">Projects Progress</h3>
+            <a routerLink="/projects" class="planora-link" style="font-size:.875rem">View all</a>
+          </div>
+
+          <div *ngIf="data.projectsProgress.length === 0" class="empty-state">
+            <mat-icon>folder_open</mat-icon>
+            <h3>No projects yet</h3>
+            <p>Create your first project to get started</p>
+          </div>
+
+          <table mat-table [dataSource]="data.projectsProgress" class="planora-table" *ngIf="data.projectsProgress.length > 0">
+            <ng-container matColumnDef="projectName">
+              <th mat-header-cell *matHeaderCellDef>Project</th>
+              <td mat-cell *matCellDef="let p">
+                <a [routerLink]="['/projects', p.projectId]" class="planora-link">{{ p.projectName }}</a>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="totalTasks">
+              <th mat-header-cell *matHeaderCellDef>Tasks</th>
+              <td mat-cell *matCellDef="let p">{{ p.totalTasks }}</td>
+            </ng-container>
+            <ng-container matColumnDef="completedTasks">
+              <th mat-header-cell *matHeaderCellDef>Completed</th>
+              <td mat-cell *matCellDef="let p">{{ p.completedTasks }}</td>
+            </ng-container>
+            <ng-container matColumnDef="progress">
+              <th mat-header-cell *matHeaderCellDef>Progress</th>
+              <td mat-cell *matCellDef="let p">
+                <div class="progress-cell">
+                  <mat-progress-bar mode="determinate" [value]="p.progressPercentage"></mat-progress-bar>
+                  <span class="pct">{{ p.progressPercentage | number:'1.0-0' }}%</span>
+                </div>
+              </td>
+            </ng-container>
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+          </table>
+        </div>
+      </ng-container>
+
+      <!-- Empty state when no data -->
+      <div *ngIf="!loading && !data" class="empty-state">
+        <mat-icon>dashboard</mat-icon>
+        <h3>No dashboard data</h3>
+        <p>Create projects to see your stats here</p>
       </div>
     </div>
   `,
   styles: [`
-    h1 { margin-bottom: 24px; color: #333; }
-    .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
-    .stat-card { text-align: center; }
-    .stat-icon mat-icon { font-size: 36px; width: 36px; height: 36px; }
-    .stat-value { font-size: 2rem; font-weight: 700; margin: 8px 0 4px; }
-    .stat-label { color: #666; font-size: 0.9rem; }
-    .progress-card { margin-bottom: 24px; }
-    .progress-row { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
-    .progress-bar { flex: 1; }
-    .task-breakdown { display: flex; gap: 16px; }
-    .task-chip { padding: 4px 12px; border-radius: 16px; font-size: 0.85rem; }
-    .todo { background: #e3f2fd; color: #1976d2; }
-    .inprogress { background: #fff3e0; color: #f57c00; }
-    .done { background: #e8f5e9; color: #388e3c; }
-    .full-width-table { width: 100%; }
-    .progress-cell { display: flex; align-items: center; gap: 8px; min-width: 160px; }
-    .progress-pct { font-size: 0.85rem; min-width: 36px; }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    @media (max-width: 768px) { .two-col { grid-template-columns: 1fr; } }
+
+    .card-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #111827;
+      margin-bottom: 20px;
+    }
+
+    .card-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .card-header-row .card-title { margin-bottom: 0; }
+
+    .big-progress { text-align: center; }
+    .big-pct { font-size: 3rem; font-weight: 800; color: #4f46e5; line-height: 1; margin-bottom: 12px; }
+    .big-bar { height: 8px; border-radius: 4px; margin-bottom: 8px; }
+    .pct-label { font-size: 0.875rem; color: #6b7280; }
+
+    .breakdown-list { display: flex; flex-direction: column; gap: 14px; }
+    .breakdown-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      .chip { min-width: 90px; text-align: center; }
+      .breakdown-bar-wrap {
+        flex: 1;
+        height: 8px;
+        background: #f3f4f6;
+        border-radius: 4px;
+        overflow: hidden;
+      }
+      .breakdown-bar { height: 100%; border-radius: 4px; transition: width .5s; }
+      .todo-bar { background: #818cf8; }
+      .inprogress-bar { background: #fbbf24; }
+      .done-bar { background: #34d399; }
+      .breakdown-count { font-size: 0.875rem; font-weight: 600; min-width: 24px; text-align: right; color: #374151; }
+    }
+
+    .planora-card { margin-bottom: 24px; }
   `]
 })
 export class DashboardComponent implements OnInit {
@@ -146,5 +239,10 @@ export class DashboardComponent implements OnInit {
         this.snackBar.open('Failed to load dashboard', 'Close', { duration: 3000 });
       }
     });
+  }
+
+  getPercent(count: number): number {
+    if (!this.data || this.data.totalTasks === 0) return 0;
+    return Math.round((count / this.data.totalTasks) * 100);
   }
 }

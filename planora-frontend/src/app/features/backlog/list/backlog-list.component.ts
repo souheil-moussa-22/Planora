@@ -17,6 +17,7 @@ import { SprintService } from '../../../core/services/sprint.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { BacklogItem, Sprint, TaskPriority } from '../../../core/models';
 import { LoadingComponent } from '../../../shared/components/loading/loading.component';
+import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-backlog-list',
@@ -25,25 +26,33 @@ import { LoadingComponent } from '../../../shared/components/loading/loading.com
     CommonModule, RouterLink, MatCardModule, MatTableModule,
     MatButtonModule, MatIconModule, MatFormFieldModule, MatInputModule,
     MatSelectModule, MatSnackBarModule, MatDialogModule, MatTooltipModule,
-    LoadingComponent
+    LoadingComponent, ConfirmDialogComponent
   ],
   template: `
     <div class="page-container">
       <div class="page-header">
         <div>
-          <button mat-button [routerLink]="['/projects', projectId]">
+          <button mat-button [routerLink]="['/projects', projectId]" class="back-btn">
             <mat-icon>arrow_back</mat-icon> Back to Project
           </button>
           <h1>Backlog</h1>
         </div>
-        <button mat-raised-button color="primary" (click)="openCreate()">
+        <button mat-raised-button class="primary-btn" (click)="openCreate()">
           <mat-icon>add</mat-icon> Add Item
         </button>
       </div>
-      <mat-card>
-        <mat-card-content>
-          <app-loading *ngIf="loading"></app-loading>
-          <table mat-table [dataSource]="items" class="full-width-table" *ngIf="!loading">
+
+      <div class="planora-card">
+        <app-loading *ngIf="loading"></app-loading>
+
+        <ng-container *ngIf="!loading">
+          <div *ngIf="items.length === 0" class="empty-state">
+            <mat-icon>list_alt</mat-icon>
+            <h3>Backlog is empty</h3>
+            <p>Add items to start planning your work</p>
+          </div>
+
+          <table mat-table [dataSource]="items" class="planora-table" *ngIf="items.length > 0">
             <ng-container matColumnDef="title">
               <th mat-header-cell *matHeaderCellDef>Title</th>
               <td mat-cell *matCellDef="let item">{{ item.title }}</td>
@@ -56,41 +65,37 @@ import { LoadingComponent } from '../../../shared/components/loading/loading.com
             </ng-container>
             <ng-container matColumnDef="sprint">
               <th mat-header-cell *matHeaderCellDef>Sprint</th>
-              <td mat-cell *matCellDef="let item">{{ item.sprintName || '—' }}</td>
+              <td mat-cell *matCellDef="let item">
+                <span *ngIf="item.sprintName" class="chip sprint-active">{{ item.sprintName }}</span>
+                <span *ngIf="!item.sprintName" class="text-secondary">Not assigned</span>
+              </td>
             </ng-container>
             <ng-container matColumnDef="actions">
-              <th mat-header-cell *matHeaderCellDef>Actions</th>
-              <td mat-cell *matCellDef="let item">
-                <button mat-icon-button color="accent" (click)="changePriority(item)" matTooltip="Change Priority">
-                  <mat-icon>low_priority</mat-icon>
+              <th mat-header-cell *matHeaderCellDef></th>
+              <td mat-cell *matCellDef="let item" class="actions-cell">
+                <button mat-icon-button (click)="changePriority(item)" matTooltip="Cycle priority">
+                  <mat-icon>swap_vert</mat-icon>
                 </button>
-                <button mat-icon-button color="primary" (click)="moveToSprint(item)" *ngIf="canManage && !item.sprintId" matTooltip="Move to Sprint">
-                  <mat-icon>play_arrow</mat-icon>
+                <button mat-icon-button (click)="moveToSprint(item)" *ngIf="canManage && !item.sprintId" matTooltip="Move to Sprint">
+                  <mat-icon>arrow_forward</mat-icon>
                 </button>
-                <button mat-icon-button color="warn" (click)="deleteItem(item)" *ngIf="canManage" matTooltip="Delete">
-                  <mat-icon>delete</mat-icon>
+                <button mat-icon-button class="delete-btn" (click)="deleteItem(item)" *ngIf="canManage" matTooltip="Delete">
+                  <mat-icon>delete_outline</mat-icon>
                 </button>
               </td>
             </ng-container>
             <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
             <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-            <tr class="mat-row" *matNoDataRow>
-              <td class="mat-cell" [attr.colspan]="displayedColumns.length" style="text-align:center;padding:24px">No backlog items found.</td>
-            </tr>
           </table>
-        </mat-card-content>
-      </mat-card>
+        </ng-container>
+      </div>
     </div>
   `,
   styles: [`
-    .page-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px; }
-    h1 { margin: 4px 0 0; }
-    .full-width-table { width: 100%; }
-    .chip { padding: 3px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 500; }
-    .priority-low { background: #f3e5f5; color: #7b1fa2; }
-    .priority-medium { background: #e3f2fd; color: #1565c0; }
-    .priority-high { background: #fff3e0; color: #e65100; }
-    .priority-critical { background: #ffebee; color: #c62828; }
+    .back-btn { color: #6b7280; margin-bottom: 4px; }
+    .primary-btn { background: #4f46e5 !important; color: #fff !important; border-radius: 8px !important; }
+    .actions-cell { text-align: right; white-space: nowrap; }
+    .delete-btn mat-icon { color: #ef4444 !important; }
   `]
 })
 export class BacklogListComponent implements OnInit {
@@ -181,15 +186,26 @@ export class BacklogListComponent implements OnInit {
   }
 
   deleteItem(item: BacklogItem): void {
-    if (!confirm(`Delete backlog item "${item.title}"?`)) return;
-    this.backlogService.deleteBacklogItem(item.id).subscribe({
-      next: response => {
-        if (response.success) {
-          this.snackBar.open('Item deleted', 'Close', { duration: 3000 });
-          this.loadItems();
-        }
-      },
-      error: () => this.snackBar.open('Failed to delete item', 'Close', { duration: 3000 })
+    const ref = this.dialog.open(ConfirmDialogComponent, {
+      width: '400px',
+      data: {
+        title: 'Delete Backlog Item',
+        message: `Are you sure you want to delete "${item.title}"?`,
+        confirmLabel: 'Delete',
+        danger: true
+      }
+    });
+    ref.afterClosed().subscribe(confirmed => {
+      if (!confirmed) return;
+      this.backlogService.deleteBacklogItem(item.id).subscribe({
+        next: response => {
+          if (response.success) {
+            this.snackBar.open('Item deleted', 'Close', { duration: 3000 });
+            this.loadItems();
+          }
+        },
+        error: () => this.snackBar.open('Failed to delete item', 'Close', { duration: 3000 })
+      });
     });
   }
 
@@ -304,3 +320,4 @@ export class MoveToSprintDialogComponent {
   selectedSprintId = '';
   constructor(@Inject(MAT_DIALOG_DATA) public data: { sprints: Sprint[] }) {}
 }
+

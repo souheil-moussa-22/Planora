@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, Router } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
@@ -6,6 +6,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { AuthService } from '../../../core/services/auth.service';
@@ -16,49 +17,95 @@ import { AuthService } from '../../../core/services/auth.service';
   imports: [
     CommonModule, RouterLink, ReactiveFormsModule,
     MatCardModule, MatFormFieldModule, MatInputModule,
-    MatButtonModule, MatSnackBarModule, MatProgressSpinnerModule
+    MatButtonModule, MatIconModule, MatSnackBarModule, MatProgressSpinnerModule
   ],
   template: `
-    <div class="auth-card-container">
-      <mat-card class="auth-card">
-        <mat-card-header>
-          <mat-card-title>Welcome Back</mat-card-title>
-          <mat-card-subtitle>Sign in to Planora</mat-card-subtitle>
-        </mat-card-header>
-        <mat-card-content>
-          <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Email</mat-label>
-              <input matInput type="email" formControlName="email" placeholder="you@example.com">
-              <mat-error *ngIf="loginForm.get('email')?.hasError('required')">Email is required</mat-error>
-              <mat-error *ngIf="loginForm.get('email')?.hasError('email')">Invalid email</mat-error>
-            </mat-form-field>
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Password</mat-label>
-              <input matInput type="password" formControlName="password">
-              <mat-error *ngIf="loginForm.get('password')?.hasError('required')">Password is required</mat-error>
-            </mat-form-field>
-            <button mat-raised-button color="primary" type="submit" class="full-width submit-btn"
-                    [disabled]="loginForm.invalid || loading">
-              <mat-spinner diameter="20" *ngIf="loading" class="inline-spinner"></mat-spinner>
-              <span *ngIf="!loading">Sign In</span>
-            </button>
-          </form>
-        </mat-card-content>
-        <mat-card-actions>
-          <p class="text-center">Don't have an account? <a routerLink="/auth/register">Register</a></p>
-        </mat-card-actions>
-      </mat-card>
+    <div class="auth-card">
+      <div class="auth-card-header">
+        <h2>Welcome back</h2>
+        <p>Sign in to your Planora account</p>
+      </div>
+
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="auth-form">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Email address</mat-label>
+          <input matInput type="email" formControlName="email" placeholder="you@example.com" autocomplete="email">
+          <mat-icon matPrefix class="field-icon">mail_outline</mat-icon>
+          <mat-error *ngIf="loginForm.get('email')?.hasError('required')">Email is required</mat-error>
+          <mat-error *ngIf="loginForm.get('email')?.hasError('email')">Enter a valid email address</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Password</mat-label>
+          <input matInput [type]="showPassword() ? 'text' : 'password'" formControlName="password" autocomplete="current-password">
+          <mat-icon matPrefix class="field-icon">lock_outline</mat-icon>
+          <button type="button" mat-icon-button matSuffix (click)="showPassword.set(!showPassword())" tabindex="-1">
+            <mat-icon>{{ showPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+          </button>
+          <mat-error *ngIf="loginForm.get('password')?.hasError('required')">Password is required</mat-error>
+        </mat-form-field>
+
+        <button mat-raised-button class="submit-btn" type="submit"
+                [disabled]="loginForm.invalid || loading">
+          <mat-spinner diameter="18" *ngIf="loading"></mat-spinner>
+          <span *ngIf="!loading">Sign In</span>
+        </button>
+      </form>
+
+      <p class="auth-footer">Don't have an account? <a routerLink="/auth/register">Create one</a></p>
     </div>
   `,
   styles: [`
-    .auth-card-container { display: flex; justify-content: center; }
-    .auth-card { width: 400px; padding: 16px; }
+    .auth-card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 40px 36px;
+      box-shadow: 0 20px 40px rgba(0,0,0,.15);
+    }
+
+    .auth-card-header {
+      text-align: center;
+      margin-bottom: 32px;
+
+      h2 {
+        font-size: 1.625rem;
+        font-weight: 700;
+        color: #111827;
+        margin-bottom: 4px;
+      }
+      p { color: #6b7280; font-size: 0.9375rem; }
+    }
+
+    .auth-form { display: flex; flex-direction: column; gap: 4px; }
+
     .full-width { width: 100%; }
-    .submit-btn { margin-top: 16px; }
-    .inline-spinner { display: inline-block; margin: 0 auto; }
-    mat-card-actions { padding: 16px; }
-    p.text-center { text-align: center; margin: 0; }
+
+    .field-icon { color: #9ca3af; margin-right: 4px; font-size: 18px; width: 18px; height: 18px; }
+
+    .submit-btn {
+      width: 100%;
+      height: 44px;
+      margin-top: 8px;
+      background: #4f46e5 !important;
+      color: #fff !important;
+      font-size: 0.9375rem;
+      font-weight: 600;
+      border-radius: 8px !important;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .auth-footer {
+      text-align: center;
+      margin-top: 24px;
+      color: #6b7280;
+      font-size: 0.875rem;
+
+      a { color: #4f46e5; font-weight: 600; text-decoration: none; }
+      a:hover { text-decoration: underline; }
+    }
   `]
 })
 export class LoginComponent {
@@ -68,6 +115,7 @@ export class LoginComponent {
   private snackBar = inject(MatSnackBar);
 
   loading = false;
+  showPassword = signal(false);
 
   loginForm = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
