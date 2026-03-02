@@ -20,11 +20,7 @@ public class TaskService : ITaskService
 
     public async Task<PaginatedResultDto<TaskDto>> GetTasksAsync(Guid projectId, int page, int pageSize)
     {
-        var allTasks = await _unitOfWork.Tasks.FindAsync(t => t.ProjectId == projectId);
-        var taskList = allTasks.ToList();
-        var total = taskList.Count;
-
-        var tasks = taskList.Skip((page - 1) * pageSize).Take(pageSize);
+        var (tasks, total) = await _unitOfWork.Tasks.GetPagedAsync(t => t.ProjectId == projectId, page, pageSize);
         var dtos = _mapper.Map<IEnumerable<TaskDto>>(tasks);
 
         return new PaginatedResultDto<TaskDto>

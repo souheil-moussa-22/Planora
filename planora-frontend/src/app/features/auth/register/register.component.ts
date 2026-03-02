@@ -54,7 +54,7 @@ import { AuthService } from '../../../core/services/auth.service';
               <mat-label>Password</mat-label>
               <input matInput type="password" formControlName="password">
               <mat-error *ngIf="registerForm.get('password')?.hasError('required')">Required</mat-error>
-              <mat-error *ngIf="registerForm.get('password')?.hasError('minlength')">Min 6 characters</mat-error>
+              <mat-error *ngIf="registerForm.get('password')?.hasError('minlength')">Min 8 characters</mat-error>
             </mat-form-field>
             <button mat-raised-button color="primary" type="submit" class="full-width submit-btn"
                     [disabled]="registerForm.invalid || loading">
@@ -93,7 +93,7 @@ export class RegisterComponent {
     lastName: ['', Validators.required],
     email: ['', [Validators.required, Validators.email]],
     userName: ['', Validators.required],
-    password: ['', [Validators.required, Validators.minLength(6)]]
+    password: ['', [Validators.required, Validators.minLength(8)]]
   });
 
   onSubmit(): void {

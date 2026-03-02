@@ -1,5 +1,6 @@
-using AutoMapper;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Planora.Application.DTOs.Auth;
 using Planora.Application.Interfaces;
 using Planora.Domain.Entities;
@@ -10,13 +11,15 @@ public class AuthService : IAuthService
 {
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IJwtService _jwtService;
-    private readonly IMapper _mapper;
+    private readonly IConfiguration _configuration;
+    private readonly ILogger<AuthService> _logger;
 
-    public AuthService(UserManager<ApplicationUser> userManager, IJwtService jwtService, IMapper mapper)
+    public AuthService(UserManager<ApplicationUser> userManager, IJwtService jwtService, IConfiguration configuration, ILogger<AuthService> logger)
     {
         _userManager = userManager;
         _jwtService = jwtService;
-        _mapper = mapper;
+        _configuration = configuration;
+        _logger = logger;
     }
 
     public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto)
@@ -40,24 +43,7 @@ public class AuthService : IAuthService
 
         await _userManager.AddToRoleAsync(user, "Member");
 
-        var roles = await _userManager.GetRolesAsync(user);
-        var token = _jwtService.GenerateToken(user, roles);
-        var refreshToken = _jwtService.GenerateRefreshToken();
-
-        user.RefreshToken = refreshToken;
-        user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(7);
-        await _userManager.UpdateAsync(user);
-
-        return new AuthResponseDto
-        {
-            Token = token,
-            RefreshToken = refreshToken,
-            Expiry = DateTime.UtcNow.AddMinutes(60),
-            UserId = user.Id,
-            Email = user.Email ?? string.Empty,
-            FullName = $"{user.FirstName} {user.LastName}",
-            Roles = roles
-        };
+        return await IssueTokensAsync(user);
     }
 
     public async Task<AuthResponseDto> LoginAsync(LoginDto dto)
@@ -70,24 +56,7 @@ public class AuthService : IAuthService
         if (!isValid)
             throw new UnauthorizedAccessException("Invalid credentials.");
 
-        var roles = await _userManager.GetRolesAsync(user);
-        var token = _jwtService.GenerateToken(user, roles);
-        var refreshToken = _jwtService.GenerateRefreshToken();
-
-        user.RefreshToken = refreshToken;
-        user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(7);
-        await _userManager.UpdateAsync(user);
-
-        return new AuthResponseDto
-        {
-            Token = token,
-            RefreshToken = refreshToken,
-            Expiry = DateTime.UtcNow.AddMinutes(60),
-            UserId = user.Id,
-            Email = user.Email ?? string.Empty,
-            FullName = $"{user.FirstName} {user.LastName}",
-            Roles = roles
-        };
+        return await IssueTokensAsync(user);
     }
 
     public async Task<AuthResponseDto> RefreshTokenAsync(RefreshTokenDto dto)
@@ -102,24 +71,7 @@ public class AuthService : IAuthService
         if (user == null || user.RefreshToken != dto.RefreshToken || user.RefreshTokenExpiry <= DateTime.UtcNow)
             throw new UnauthorizedAccessException("Invalid or expired refresh token.");
 
-        var roles = await _userManager.GetRolesAsync(user);
-        var newToken = _jwtService.GenerateToken(user, roles);
-        var newRefreshToken = _jwtService.GenerateRefreshToken();
-
-        user.RefreshToken = newRefreshToken;
-        user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(7);
-        await _userManager.UpdateAsync(user);
-
-        return new AuthResponseDto
-        {
-            Token = newToken,
-            RefreshToken = newRefreshToken,
-            Expiry = DateTime.UtcNow.AddMinutes(60),
-            UserId = user.Id,
-            Email = user.Email ?? string.Empty,
-            FullName = $"{user.FirstName} {user.LastName}",
-            Roles = roles
-        };
+        return await IssueTokensAsync(user);
     }
 
     public async Task LogoutAsync(string userId)
@@ -131,5 +83,34 @@ public class AuthService : IAuthService
             user.RefreshTokenExpiry = null;
             await _userManager.UpdateAsync(user);
         }
+    }
+
+    private async Task<AuthResponseDto> IssueTokensAsync(ApplicationUser user)
+    {
+        var roles = await _userManager.GetRolesAsync(user);
+        var token = _jwtService.GenerateToken(user, roles);
+        var refreshToken = _jwtService.GenerateRefreshToken();
+
+        var rawValue = _configuration["JwtSettings:ExpiryMinutes"];
+        if (!int.TryParse(rawValue, out var expiryMinutes))
+        {
+            _logger.LogWarning("JwtSettings:ExpiryMinutes is missing or invalid ('{Value}'). Defaulting to 60 minutes.", rawValue);
+            expiryMinutes = 60;
+        }
+
+        user.RefreshToken = refreshToken;
+        user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(7);
+        await _userManager.UpdateAsync(user);
+
+        return new AuthResponseDto
+        {
+            Token = token,
+            RefreshToken = refreshToken,
+            Expiry = DateTime.UtcNow.AddMinutes(expiryMinutes),
+            UserId = user.Id,
+            Email = user.Email ?? string.Empty,
+            FullName = $"{user.FirstName} {user.LastName}",
+            Roles = roles
+        };
     }
 }
