@@ -77,7 +77,8 @@ public class TasksController : ControllerBase
     public async Task<IActionResult> AddComment(Guid taskId, [FromBody] CreateCommentDto dto)
     {
         dto.TaskId = taskId;
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null) return Unauthorized(ApiResponseDto<object>.ErrorResult("User not authenticated."));
         var result = await _commentService.AddCommentAsync(dto, userId);
         return Ok(ApiResponseDto<CommentDto>.SuccessResult(result, "Comment added successfully."));
     }
@@ -86,7 +87,8 @@ public class TasksController : ControllerBase
     [HttpDelete("{taskId:guid}/comments/{commentId:guid}")]
     public async Task<IActionResult> DeleteComment(Guid taskId, Guid commentId)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null) return Unauthorized(ApiResponseDto<object>.ErrorResult("User not authenticated."));
         await _commentService.DeleteCommentAsync(commentId, userId);
         return Ok(ApiResponseDto<object>.SuccessResult(null!, "Comment deleted successfully."));
     }

@@ -35,7 +35,7 @@ public class JwtService : IJwtService
 
         claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
 
-        var expiryMinutes = int.Parse(jwtSettings["ExpiryMinutes"] ?? "60");
+        var expiryMinutes = int.TryParse(jwtSettings["ExpiryMinutes"], out var parsed) ? parsed : 60;
         var token = new JwtSecurityToken(
             issuer: jwtSettings["Issuer"],
             audience: jwtSettings["Audience"],

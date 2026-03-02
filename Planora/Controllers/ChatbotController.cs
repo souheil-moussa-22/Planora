@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Planora.Application.DTOs.Chatbot;
 using Planora.Application.DTOs.Common;
 using Planora.Application.Interfaces;
 
@@ -24,10 +25,4 @@ public class ChatbotController : ControllerBase
         var response = await _chatbotService.GetResponseAsync(dto.Message, dto.Context);
         return Ok(ApiResponseDto<string>.SuccessResult(response));
     }
-}
-
-public class ChatRequestDto
-{
-    public string Message { get; set; } = string.Empty;
-    public string? Context { get; set; }
 }

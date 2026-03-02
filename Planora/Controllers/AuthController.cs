@@ -49,7 +49,8 @@ public class AuthController : ControllerBase
     [HttpPost("logout")]
     public async Task<IActionResult> Logout()
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null) return Unauthorized(ApiResponseDto<object>.ErrorResult("User not authenticated."));
         await _authService.LogoutAsync(userId);
         return Ok(ApiResponseDto<object>.SuccessResult(null!, "Logged out successfully."));
     }
