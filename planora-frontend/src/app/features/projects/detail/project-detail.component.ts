@@ -82,7 +82,7 @@ import { LoadingComponent } from '../../../shared/components/loading/loading.com
             <h3 class="section-title">Team Members</h3>
             <div *ngIf="project.members?.length" class="members-list">
               <div class="member-item" *ngFor="let m of project.members">
-                <div class="member-avatar">{{ m.fullName[0] }}</div>
+                <div class="member-avatar">{{ m.fullName?.[0] || '?' }}</div>
                 <div>
                   <div class="member-name">{{ m.fullName }}</div>
                   <div class="member-email">{{ m.email }}</div>

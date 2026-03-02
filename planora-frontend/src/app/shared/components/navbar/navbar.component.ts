@@ -100,6 +100,6 @@ export class NavbarComponent {
 
   getInitials(name: string): string {
     if (!name) return '?';
-    return name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
+    return name.split(' ').filter(n => n).map(n => n[0]).slice(0, 2).join('').toUpperCase();
   }
 }

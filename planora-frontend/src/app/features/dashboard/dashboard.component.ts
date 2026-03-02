@@ -242,7 +242,7 @@ export class DashboardComponent implements OnInit {
   }
 
   getPercent(count: number): number {
-    if (!this.data || this.data.totalTasks === 0) return 0;
+    if (!this.data || this.data.totalTasks === 0 || count <= 0) return 0;
     return Math.round((count / this.data.totalTasks) * 100);
   }
 }
