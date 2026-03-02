@@ -26,7 +26,13 @@ public class UserService : IUserService
         var query = _userManager.Users.AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(search))
-            query = query.Where(u => u.Email!.Contains(search) || u.FirstName.Contains(search) || u.LastName.Contains(search));
+        {
+            var pattern = $"%{search}%";
+            query = query.Where(u =>
+                EF.Functions.Like(u.Email!, pattern) ||
+                EF.Functions.Like(u.FirstName, pattern) ||
+                EF.Functions.Like(u.LastName, pattern));
+        }
 
         var total = await query.CountAsync();
         var users = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();

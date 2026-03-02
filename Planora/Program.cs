@@ -54,11 +54,14 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
-// CORS
+// CORS – allowed origins are configurable via Cors:AllowedOrigins in appsettings
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+    ?? ["http://localhost:4200"];
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngularApp", policy =>
-        policy.WithOrigins("http://localhost:4200")
+        policy.WithOrigins(allowedOrigins)
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials());
