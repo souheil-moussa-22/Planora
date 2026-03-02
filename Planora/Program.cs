@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Planora.Infrastructure;
 using Planora.Application;
 using Planora.Infrastructure.Data;
@@ -69,9 +70,12 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Seed roles and admin user
+// Apply pending migrations and seed roles
 using (var scope = app.Services.CreateScope())
 {
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    await db.Database.MigrateAsync();
+
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
     await RoleSeeder.SeedRolesAsync(roleManager);
 }
