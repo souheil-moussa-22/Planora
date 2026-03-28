@@ -1,5 +1,7 @@
 # PlanoraFrontend
 
+> For a full overview of the project architecture (backend layers, request flow, etc.) see [docs/ARCHITECTURE.md](../docs/ARCHITECTURE.md).
+
 This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 17.3.17.
 
 ## Development server
