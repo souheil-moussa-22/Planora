@@ -1,0 +1,55 @@
+<div class="task-card" [class.draggable]="draggable">
+  <div class="task-card-header">
+    @if (task.code) {
+    <div class="task-id">
+      {{ task.code }}
+    </div>
+    }
+    <div class="task-actions">
+      <button mat-icon-button (click)="edit()" matTooltip="Modifier" class="edit-btn">
+        <mat-icon>edit</mat-icon>
+      </button>
+      <button mat-icon-button (click)="delete()" matTooltip="Supprimer" class="delete-btn">
+        <mat-icon>delete_outline</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <div class="task-title">
+    {{ task.title }}
+  </div>
+
+  @if (task.description) {
+  <div class="task-description">
+    {{ task.description | slice:0:80 }}{{ task.description.length > 80 ? '…' : '' }}
+  </div>
+  }
+
+  <div class="task-footer">
+    <div class="task-badges">
+      <span class="priority-badge" [ngClass]="getPriorityClass(task.priority)">
+        {{ getPriorityLabel(task.priority) }}
+      </span>
+      @if (showStatus && task.status !== undefined) {
+      <span class="status-badge" [ngClass]="getStatusClass(task.status)">
+        {{ getStatusLabel(task.status) }}
+      </span>
+      }
+      @if (showSprint && task.sprintName) {
+      <span class="sprint-badge">
+        <mat-icon>sprint</mat-icon>
+        {{ task.sprintName }}
+      </span>
+      }
+    </div>
+
+    @if (task.assignedToName) {
+    <div class="assignee">
+      <div class="assignee-avatar">
+        {{ task.assignedToName.charAt(0) }}
+      </div>
+      <span class="assignee-name">{{ task.assignedToName }}</span>
+    </div>
+    }
+  </div>
+</div>

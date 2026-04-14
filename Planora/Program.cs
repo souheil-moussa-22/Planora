@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Planora.Infrastructure;
 using Planora.Application;
+using Planora.Infrastructure;
 using Planora.Infrastructure.Data;
 using Planora.Infrastructure.Identity;
 using Planora.Middleware;
@@ -57,7 +57,7 @@ builder.Services.AddInfrastructure(builder.Configuration);
 
 // CORS – allowed origins are configurable via Cors:AllowedOrigins in appsettings
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
-    ?? ["http://localhost:4200"];
+    ?? ["http://localhost:4200", "http://localhost:5000", "http://localhost:5070"];
 
 builder.Services.AddCors(options =>
 {
@@ -67,6 +67,25 @@ builder.Services.AddCors(options =>
               .AllowAnyMethod()
               .AllowCredentials());
 });
+
+static async Task SeedAdminUser(IServiceProvider services)
+{
+    var userManager = services.GetRequiredService<UserManager<Planora.Domain.Entities.ApplicationUser>>();
+
+    if (await userManager.FindByEmailAsync("kdousmayla@gmail.com") != null) return;
+
+    var admin = new Planora.Domain.Entities.ApplicationUser
+    {
+        FirstName = "Mayla",
+        LastName = "Kdous",
+        Email = "kdousmayla@gmail.com",
+        UserName = "admin",
+        IsActive = true
+    };
+
+    await userManager.CreateAsync(admin, "Admin@1234");
+    await userManager.AddToRoleAsync(admin, "Admin");
+}
 
 var app = builder.Build();
 
@@ -78,16 +97,14 @@ using (var scope = app.Services.CreateScope())
 
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
     await RoleSeeder.SeedRolesAsync(roleManager);
+    await SeedAdminUser(scope.ServiceProvider);
 }
 
 // Middleware pipeline
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Planora API v1"));
-}
+app.UseSwagger();
+app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Planora API v1"));
 
 app.UseHttpsRedirection();
 app.UseCors("AllowAngularApp");

@@ -1,3 +1,4 @@
+// dashboard.component.ts - Version corrigée
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
@@ -12,12 +13,13 @@ import { DashboardData } from '../../core/models';
 import { LoadingComponent } from '../../shared/components/loading/loading.component';
 
 @Component({
-    selector: 'app-dashboard',
-    imports: [
-        CommonModule, RouterLink, MatCardModule, MatProgressBarModule,
-        MatTableModule, MatIconModule, MatButtonModule, MatSnackBarModule, LoadingComponent
-    ],
-    template: `
+  selector: 'app-dashboard',
+  standalone: true,
+  imports: [
+    CommonModule, RouterLink, MatCardModule, MatProgressBarModule,
+    MatTableModule, MatIconModule, MatButtonModule, MatSnackBarModule, LoadingComponent
+  ],
+  template: `
     <div class="page-container">
       <div class="page-header">
         <div>
@@ -128,6 +130,10 @@ import { LoadingComponent } from '../../shared/components/loading/loading.compon
                   <a [routerLink]="['/projects', p.projectId]" class="planora-link">{{ p.projectName }}</a>
                 </td>
               </ng-container>
+              <ng-container matColumnDef="workspaceName">
+                <th mat-header-cell *matHeaderCellDef>Workspace</th>
+                <td mat-cell *matCellDef="let p">{{ p.workspaceName }}</td>
+              </ng-container>
               <ng-container matColumnDef="totalTasks">
                 <th mat-header-cell *matHeaderCellDef>Tasks</th>
                 <td mat-cell *matCellDef="let p">{{ p.totalTasks }}</td>
@@ -162,7 +168,7 @@ import { LoadingComponent } from '../../shared/components/loading/loading.compon
       }
     </div>
     `,
-    styles: [`
+  styles: [`
     .stats-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -228,7 +234,7 @@ export class DashboardComponent implements OnInit {
 
   loading = true;
   data: DashboardData | null = null;
-  displayedColumns = ['projectName', 'totalTasks', 'completedTasks', 'progress'];
+  displayedColumns = ['projectName', 'workspaceName', 'totalTasks', 'completedTasks', 'progress'];
 
   ngOnInit(): void {
     this.dashboardService.getDashboard().subscribe({

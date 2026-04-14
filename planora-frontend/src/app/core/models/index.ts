@@ -1,3 +1,4 @@
+// src/app/core/models.ts
 export interface ApiResponse<T> {
   success: boolean;
   message: string;
@@ -50,13 +51,18 @@ export interface RefreshRequest {
 
 export interface Project {
   id: string;
+  workspaceId: string;
+  workspaceName: string;
+  workspaceOwnerId: string;
+  color?: string;
   name: string;
   description: string;
   startDate: string;
   endDate: string;
   projectManagerId: string;
   projectManagerName: string;
-  members: ProjectMember[];
+  members?: ProjectMember[];
+  memberCount: number;
   totalTasks: number;
   completedTasks: number;
   progressPercentage: number;
@@ -68,12 +74,82 @@ export interface ProjectMember {
   email: string;
 }
 
+export interface ProjectInviteableUser {
+  userId: string;
+  fullName: string;
+  email: string;
+}
+
+export interface ProjectInvitation {
+  id: string;
+  projectId: string;
+  projectName: string;
+  invitedUserId: string;
+  invitedUserName: string;
+  invitedByUserId: string;
+  invitedByUserName: string;
+  status: number;
+  createdAt: string;
+  respondedAt?: string | null;
+}
+
 export interface CreateProjectRequest {
+  workspaceId: string;
   name: string;
   description: string;
   startDate: string;
   endDate: string;
   projectManagerId: string;
+}
+
+export interface Workspace {
+  id: string;
+  name: string;
+  description: string;
+  ownerId: string;
+  ownerName: string;
+  projectManagerId: string;
+  projectManagerName: string;
+  memberCount: number;
+  projectCount: number;
+  createdAt: string;
+}
+
+export interface WorkspaceMember {
+  userId: string;
+  fullName: string;
+  email: string;
+  joinedAt: string;
+}
+
+export interface WorkspaceInvitation {
+  id: string;
+  workspaceId: string;
+  workspaceName: string;
+  email: string;
+  invitedByUserId: string;
+  expiresAt: string;
+  accepted: boolean;
+  createdAt: string;
+}
+
+export interface WorkspaceInviteableUser {
+  userId: string;
+  fullName: string;
+  email: string;
+}
+
+export interface CreateWorkspaceRequest {
+  name: string;
+  description: string;
+}
+
+export interface SetWorkspaceProjectManagerRequest {
+  userId: string;
+}
+
+export interface InviteWorkspaceUserRequest {
+  userId: string;
 }
 
 export interface Task {
@@ -152,6 +228,7 @@ export interface CreateSprintRequest {
   startDate: string;
   endDate: string;
   projectId: string;
+  status?: number;
 }
 
 export interface BacklogItem {
@@ -163,6 +240,15 @@ export interface BacklogItem {
   projectName: string;
   sprintId: string | null;
   sprintName: string | null;
+  status: TaskStatus;
+  assignedToName: string;
+  progressPercentage: number;
+  dueDate: string;
+  assignedToId?: string;
+  complexity?: number;
+  createdAt?: string;
+  updatedAt?: string;
+  storyPoints?: number | null;
 }
 
 export interface CreateBacklogItemRequest {
@@ -170,6 +256,17 @@ export interface CreateBacklogItemRequest {
   description: string;
   priority: TaskPriority;
   projectId: string;
+  assignedToId?: string;
+  complexity?: number;
+  sprintId?: string | null;
+}
+
+export interface UpdateBacklogItemRequest {
+  title: string;
+  description: string;
+  priority: TaskPriority;
+  assignedToId?: string | null;
+  complexity?: number;
 }
 
 export interface User {
@@ -202,6 +299,7 @@ export interface DashboardData {
 export interface ProjectProgress {
   projectId: string;
   projectName: string;
+  workspaceName: string;
   progressPercentage: number;
   totalTasks: number;
   completedTasks: number;

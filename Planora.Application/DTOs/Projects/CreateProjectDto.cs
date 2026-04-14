@@ -2,6 +2,7 @@ namespace Planora.Application.DTOs.Projects;
 
 public class CreateProjectDto
 {
+    public Guid WorkspaceId { get; set; }
     public string Name { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public DateTime StartDate { get; set; }

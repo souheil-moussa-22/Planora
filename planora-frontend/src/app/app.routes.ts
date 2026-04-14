@@ -4,6 +4,8 @@ import { roleGuard } from './core/guards/role.guard';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
+
+  // Auth routes
   {
     path: 'auth',
     loadComponent: () => import('./shared/layouts/auth-layout/auth-layout.component').then(m => m.AuthLayoutComponent),
@@ -12,18 +14,83 @@ export const routes: Routes = [
       { path: 'register', loadComponent: () => import('./features/auth/register/register.component').then(m => m.RegisterComponent) }
     ]
   },
+
+  // Main app routes (avec MainLayout qui contient navbar + sidebar)
   {
     path: '',
     loadComponent: () => import('./shared/layouts/main-layout/main-layout.component').then(m => m.MainLayoutComponent),
     canActivate: [authGuard],
     children: [
-      { path: 'dashboard', loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent) },
-      { path: 'projects', loadComponent: () => import('./features/projects/list/projects-list.component').then(m => m.ProjectsListComponent) },
-      { path: 'projects/:id', loadComponent: () => import('./features/projects/detail/project-detail.component').then(m => m.ProjectDetailComponent) },
-      { path: 'projects/:projectId/tasks', loadComponent: () => import('./features/tasks/list/tasks-list.component').then(m => m.TasksListComponent) },
-      { path: 'projects/:projectId/tasks/:id', loadComponent: () => import('./features/tasks/detail/task-detail.component').then(m => m.TaskDetailComponent) },
-      { path: 'projects/:projectId/sprints', loadComponent: () => import('./features/sprints/list/sprints-list.component').then(m => m.SprintsListComponent) },
-      { path: 'projects/:projectId/backlog', loadComponent: () => import('./features/backlog/list/backlog-list.component').then(m => m.BacklogListComponent) },
+      // Dashboard
+      {
+        path: 'dashboard',
+        loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent)
+      },
+
+      // Projects list
+      {
+        path: 'projects',
+        loadComponent: () => import('./features/projects/list/projects-list.component').then(m => m.ProjectsListComponent)
+      },
+
+      // Workspaces
+      {
+        path: 'workspaces',
+        loadComponent: () => import('./features/workspaces/workspaces.component').then(m => m.WorkspacesComponent)
+      },
+
+      // Project detail (page d'accueil du projet)
+      {
+        path: 'projects/:projectId',
+        loadComponent: () => import('./features/projects/detail/project-detail.component').then(m => m.ProjectDetailComponent)
+      },
+
+      // Backlog (vue améliorée)
+      {
+        path: 'projects/:projectId/backlog',
+        loadComponent: () => import('./features/backlog/view/backlog-view.component').then(m => m.BacklogViewComponent)
+      },
+
+      // Tasks
+      {
+        path: 'projects/:projectId/tasks',
+        loadComponent: () => import('./features/tasks/list/tasks-list.component').then(m => m.TasksListComponent)
+      },
+      {
+        path: 'projects/:projectId/tasks/:id',
+        loadComponent: () => import('./features/tasks/detail/task-detail.component').then(m => m.TaskDetailComponent)
+      },
+
+      // Sprints
+      {
+        path: 'projects/:projectId/sprints',
+        loadComponent: () => import('./features/sprints/list/sprints-list.component').then(m => m.SprintsListComponent)
+      },
+
+      // Sprint Board (vue kanban)
+      {
+        path: 'projects/:projectId/board',
+        loadComponent: () => import('./features/sprints/board/sprint-board.component').then(m => m.SprintBoardComponent)
+      },
+
+      // Sprint History (liste des sprints terminés)
+      {
+        path: 'projects/:projectId/history',
+        loadComponent: () => import('./features/sprints/history/sprint-history.component').then(m => m.SprintHistoryComponent)
+      },
+
+      // Sprint Detail (détails d'un sprint terminé avec tableau des tickets)
+      {
+        path: 'projects/:projectId/history/:sprintId',
+        loadComponent: () => import('./features/sprints/history/details/sprint-detail.component').then(m => m.SprintDetailComponent)
+      },
+
+      {
+        path: 'tasks',
+        loadComponent: () => import('./features/tasks/list/tasks-list.component').then(m => m.TasksListComponent)
+      },
+
+      // Users (admin only)
       {
         path: 'users',
         loadComponent: () => import('./features/users/list/users-list.component').then(m => m.UsersListComponent),
@@ -31,5 +98,8 @@ export const routes: Routes = [
         data: { roles: ['Admin'] }
       }
     ]
-  }
+  },
+
+  // Fallback
+  { path: '**', redirectTo: '/dashboard' }
 ];

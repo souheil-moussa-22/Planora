@@ -22,15 +22,16 @@ import { ProjectFormDialogComponent } from './project-form-dialog.component';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 
 @Component({
-    selector: 'app-projects-list',
-    imports: [
-        CommonModule, RouterLink, ReactiveFormsModule,
-        MatCardModule, MatTableModule, MatButtonModule, MatIconModule,
-        MatFormFieldModule, MatInputModule, MatPaginatorModule,
-        MatProgressBarModule, MatSnackBarModule, MatDialogModule,
-        MatTooltipModule, LoadingComponent
-    ],
-    template: `
+  selector: 'app-projects-list',
+  standalone: true,
+  imports: [
+    CommonModule, RouterLink, ReactiveFormsModule,
+    MatCardModule, MatTableModule, MatButtonModule, MatIconModule,
+    MatFormFieldModule, MatInputModule, MatPaginatorModule,
+    MatProgressBarModule, MatSnackBarModule, MatDialogModule,
+    MatTooltipModule, LoadingComponent
+  ],
+  template: `
     <div class="page-container">
       <div class="page-header">
         <div>
@@ -79,6 +80,10 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
                   {{ p.description | slice:0:60 }}{{ (p.description?.length ?? 0) > 60 ? '…' : '' }}
                 </td>
               </ng-container>
+              <ng-container matColumnDef="workspace">
+                <th mat-header-cell *matHeaderCellDef>Workspace</th>
+                <td mat-cell *matCellDef="let p">{{ p.workspaceName }}</td>
+              </ng-container>
               <ng-container matColumnDef="manager">
                 <th mat-header-cell *matHeaderCellDef>Manager</th>
                 <td mat-cell *matCellDef="let p">{{ p.projectManagerName }}</td>
@@ -88,7 +93,7 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
                 <td mat-cell *matCellDef="let p">
                   <span class="member-count">
                     <mat-icon style="font-size:14px;width:14px;height:14px;vertical-align:middle">people</mat-icon>
-                    {{ p.members?.length || 0 }}
+                    {{ p.memberCount || 0 }}
                   </span>
                 </td>
               </ng-container>
@@ -133,7 +138,7 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
       </div>
     </div>
     `,
-    styles: [`
+  styles: [`
     .primary-btn {
       background: #4f46e5 !important;
       color: #fff !important;
@@ -160,10 +165,10 @@ export class ProjectsListComponent implements OnInit {
   currentPage = 1;
   loading = true;
   searchCtrl = new FormControl('');
-  displayedColumns = ['name', 'description', 'manager', 'members', 'progress', 'actions'];
+  displayedColumns = ['name', 'description', 'workspace', 'manager', 'members', 'progress', 'actions'];
 
   get canManage(): boolean {
-    return this.authService.hasRole(['Admin', 'ProjectManager']);
+    return this.authService.isAuthenticated;
   }
 
   get isAdmin(): boolean {

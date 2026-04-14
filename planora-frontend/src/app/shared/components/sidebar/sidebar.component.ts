@@ -1,115 +1,101 @@
-import { Component, inject, Input } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
-
+import { Component, OnInit, inject, Input } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Router, NavigationEnd, RouterLink, RouterLinkActive } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { filter } from 'rxjs/operators';
 import { AuthService } from '../../../core/services/auth.service';
-
-interface NavItem {
-  label: string;
-  icon: string;
-  route: string;
-  roles?: string[];
-}
+import { ProjectService } from '../../../core/services/project.service';
+import { ApiResponse, Project } from '../../../core/models';
 
 @Component({
-    selector: 'app-sidebar',
-    imports: [RouterLink, RouterLinkActive, MatIconModule, MatTooltipModule],
-    template: `
-    <nav class="sidebar" [class.collapsed]="collapsed">
-      <div class="nav-section">
-        @for (item of navItems; track item) {
-          @if (!item.roles || hasRole(item.roles)) {
-            <a
-              class="nav-item"
-              [routerLink]="item.route"
-              routerLinkActive="active"
-              [matTooltip]="collapsed ? item.label : ''"
-              matTooltipPosition="right">
-              <mat-icon class="nav-icon">{{ item.icon }}</mat-icon>
-              @if (!collapsed) {
-                <span class="nav-label">{{ item.label }}</span>
-              }
-            </a>
-          }
-        }
-      </div>
-    </nav>
-    `,
-    styles: [`
-    .sidebar {
-      position: fixed;
-      top: 64px;
-      left: 0;
-      bottom: 0;
-      width: 240px;
-      background: #fff;
-      border-right: 1px solid #e5e7eb;
-      z-index: 100;
-      display: flex;
-      flex-direction: column;
-      transition: width .2s ease;
-      overflow: hidden;
-    }
-    .sidebar.collapsed { width: 64px; }
-
-    .nav-section { padding: 12px 8px; flex: 1; }
-
-    .nav-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 10px 12px;
-      border-radius: 8px;
-      color: #6b7280;
-      text-decoration: none;
-      font-size: 0.875rem;
-      font-weight: 500;
-      margin-bottom: 2px;
-      transition: background .15s, color .15s;
-      white-space: nowrap;
-
-      &:hover {
-        background: #f5f3ff;
-        color: #4f46e5;
-        .nav-icon { color: #4f46e5; }
-      }
-
-      &.active {
-        background: #ede9fe;
-        color: #4f46e5;
-        .nav-icon { color: #4f46e5; }
-      }
-    }
-
-    .nav-icon {
-      font-size: 20px;
-      width: 20px;
-      height: 20px;
-      flex-shrink: 0;
-      color: inherit;
-    }
-
-    .nav-label { overflow: hidden; }
-
-    @media (max-width: 768px) {
-      .sidebar { width: 64px; }
-      .sidebar.collapsed { width: 0; border: none; }
-      .nav-label { display: none; }
-    }
-  `]
+  selector: 'app-sidebar',
+  standalone: true,
+  imports: [
+    CommonModule,
+    RouterLink,
+    RouterLinkActive,
+    MatIconModule,
+    MatButtonModule,
+    MatTooltipModule
+  ],
+  templateUrl: './sidebar.component.html',
+  styleUrls: ['./sidebar.component.scss']
 })
-export class SidebarComponent {
-  private authService = inject(AuthService);
+export class SidebarComponent implements OnInit {
   @Input() collapsed = false;
 
-  navItems: NavItem[] = [
-    { label: 'Dashboard', icon: 'dashboard', route: '/dashboard' },
-    { label: 'Projects',  icon: 'folder_open', route: '/projects' },
-    { label: 'Users',     icon: 'people', route: '/users', roles: ['Admin'] }
-  ];
+  authService = inject(AuthService);
+  private projectService = inject(ProjectService);
+  private router = inject(Router);
 
-  hasRole(roles: string[]): boolean {
-    return this.authService.hasRole(roles);
+  currentProject: Project | null = null;
+  showProjectNav = false;
+  userName = '';
+  userEmail = '';
+  userInitials = '';
+  backlogCount = 0;
+
+  ngOnInit(): void {
+    const user = this.authService.currentUser;
+    if (user) {
+      this.userName = user.fullName || 'Utilisateur';
+      this.userEmail = user.email || '';
+      this.userInitials = this.userName.charAt(0).toUpperCase();
+    }
+
+    this.router.events.pipe(
+      filter(event => event instanceof NavigationEnd)
+    ).subscribe(() => {
+      const url = this.router.url;
+      this.showProjectNav = url.includes('/projects/') &&
+        !url.includes('/projects/list') &&
+        !url.match(/\/projects\/?$/);
+
+      if (this.showProjectNav) {
+        const projectId = this.extractProjectId(url);
+        if (projectId) {
+          this.loadProject(projectId);
+        }
+      } else {
+        this.currentProject = null;
+      }
+    });
+  }
+
+  private extractProjectId(url: string): string | null {
+    const match = url.match(/\/projects\/([^\/]+)/);
+    const projectId = match ? match[1] : null;
+    if (!projectId || projectId === 'null' || projectId === 'undefined') {
+      return null;
+    }
+
+    return projectId;
+  }
+
+  private loadProject(projectId: string): void {
+    this.projectService.getProject(projectId).subscribe({
+      next: (response: ApiResponse<Project>) => {
+        if (response.success) {
+          this.currentProject = response.data;
+        }
+      },
+      error: (err: unknown) => {
+        console.error('Erreur chargement projet', err);
+      }
+    });
+  }
+
+  getProjectColor(): string {
+    return this.currentProject?.color || '#4f46e5';
+  }
+
+  goToAllTasks(): void {
+    this.router.navigate(['/tasks/all']);
+  }
+  logout(): void {
+    this.authService.logout();
+    this.router.navigate(['/login']);
   }
 }

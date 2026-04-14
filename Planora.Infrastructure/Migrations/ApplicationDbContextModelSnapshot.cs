@@ -246,6 +246,12 @@ namespace Planora.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("AssignedToId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int?>("Complexity")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -269,6 +275,9 @@ namespace Planora.Infrastructure.Migrations
                     b.Property<Guid?>("SprintId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -279,7 +288,11 @@ namespace Planora.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("AssignedToId");
+
                     b.HasIndex("ProjectId");
+
+                    b.HasIndex("SprintId");
 
                     b.ToTable("BacklogItems");
                 });
@@ -355,29 +368,82 @@ namespace Planora.Infrastructure.Migrations
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Name");
 
                     b.HasIndex("ProjectManagerId");
 
+                    b.HasIndex("WorkspaceId");
+
                     b.ToTable("Projects");
                 });
 
-            modelBuilder.Entity("Planora.Domain.Entities.ProjectMember", b =>
+            modelBuilder.Entity("Planora.Domain.Entities.ProjectInvitation", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("Accepted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("InvitedByUserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("RespondedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InvitedByUserId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("ProjectId", "UserId", "Accepted");
+
+                    b.ToTable("ProjectInvitations");
+                });
+
+            modelBuilder.Entity("Planora.Domain.Entities.ProjectUser", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("AssignedAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
-
-                    b.Property<DateTime>("JoinedAt")
-                        .HasColumnType("datetime2");
 
                     b.Property<Guid>("ProjectId")
                         .HasColumnType("uniqueidentifier");
@@ -396,7 +462,7 @@ namespace Planora.Infrastructure.Migrations
                     b.HasIndex("ProjectId", "UserId")
                         .IsUnique();
 
-                    b.ToTable("ProjectMembers");
+                    b.ToTable("ProjectUsers");
                 });
 
             modelBuilder.Entity("Planora.Domain.Entities.Sprint", b =>
@@ -500,6 +566,138 @@ namespace Planora.Infrastructure.Migrations
                     b.ToTable("Tasks");
                 });
 
+            modelBuilder.Entity("Planora.Domain.Entities.Workspace", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("OwnerId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("ProjectManagerId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name");
+
+                    b.HasIndex("OwnerId");
+
+                    b.HasIndex("ProjectManagerId");
+
+                    b.ToTable("Workspaces");
+                });
+
+            modelBuilder.Entity("Planora.Domain.Entities.WorkspaceInvitation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("Accepted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("InvitedByUserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("RespondedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InvitedByUserId");
+
+                    b.HasIndex("Token")
+                        .IsUnique();
+
+                    b.HasIndex("WorkspaceId", "Email", "Accepted");
+
+                    b.ToTable("WorkspaceInvitations");
+                });
+
+            modelBuilder.Entity("Planora.Domain.Entities.WorkspaceUser", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("JoinedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("WorkspaceId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("WorkspaceUsers");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -553,13 +751,26 @@ namespace Planora.Infrastructure.Migrations
 
             modelBuilder.Entity("Planora.Domain.Entities.BacklogItem", b =>
                 {
+                    b.HasOne("Planora.Domain.Entities.ApplicationUser", "AssignedTo")
+                        .WithMany("BacklogItems")
+                        .HasForeignKey("AssignedToId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("Planora.Domain.Entities.Project", "Project")
                         .WithMany("BacklogItems")
                         .HasForeignKey("ProjectId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("Planora.Domain.Entities.Sprint", "Sprint")
+                        .WithMany()
+                        .HasForeignKey("SprintId");
+
+                    b.Navigation("AssignedTo");
+
                     b.Navigation("Project");
+
+                    b.Navigation("Sprint");
                 });
 
             modelBuilder.Entity("Planora.Domain.Entities.Comment", b =>
@@ -589,19 +800,54 @@ namespace Planora.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Planora.Domain.Entities.Workspace", "Workspace")
+                        .WithMany("Projects")
+                        .HasForeignKey("WorkspaceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("ProjectManager");
+
+                    b.Navigation("Workspace");
                 });
 
-            modelBuilder.Entity("Planora.Domain.Entities.ProjectMember", b =>
+            modelBuilder.Entity("Planora.Domain.Entities.ProjectInvitation", b =>
                 {
+                    b.HasOne("Planora.Domain.Entities.ApplicationUser", "InvitedByUser")
+                        .WithMany("SentProjectInvitations")
+                        .HasForeignKey("InvitedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("Planora.Domain.Entities.Project", "Project")
-                        .WithMany("Members")
+                        .WithMany("Invitations")
                         .HasForeignKey("ProjectId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("Planora.Domain.Entities.ApplicationUser", "User")
-                        .WithMany("ProjectMembers")
+                        .WithMany("ReceivedProjectInvitations")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("InvitedByUser");
+
+                    b.Navigation("Project");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Planora.Domain.Entities.ProjectUser", b =>
+                {
+                    b.HasOne("Planora.Domain.Entities.Project", "Project")
+                        .WithMany("Users")
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Planora.Domain.Entities.ApplicationUser", "User")
+                        .WithMany("ProjectUsers")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
@@ -647,26 +893,97 @@ namespace Planora.Infrastructure.Migrations
                     b.Navigation("Sprint");
                 });
 
+            modelBuilder.Entity("Planora.Domain.Entities.Workspace", b =>
+                {
+                    b.HasOne("Planora.Domain.Entities.ApplicationUser", "Owner")
+                        .WithMany("OwnedWorkspaces")
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Planora.Domain.Entities.ApplicationUser", "ProjectManager")
+                        .WithMany()
+                        .HasForeignKey("ProjectManagerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Owner");
+
+                    b.Navigation("ProjectManager");
+                });
+
+            modelBuilder.Entity("Planora.Domain.Entities.WorkspaceInvitation", b =>
+                {
+                    b.HasOne("Planora.Domain.Entities.ApplicationUser", "InvitedByUser")
+                        .WithMany("SentWorkspaceInvitations")
+                        .HasForeignKey("InvitedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Planora.Domain.Entities.Workspace", "Workspace")
+                        .WithMany("Invitations")
+                        .HasForeignKey("WorkspaceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("InvitedByUser");
+
+                    b.Navigation("Workspace");
+                });
+
+            modelBuilder.Entity("Planora.Domain.Entities.WorkspaceUser", b =>
+                {
+                    b.HasOne("Planora.Domain.Entities.ApplicationUser", "User")
+                        .WithMany("WorkspaceUsers")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Planora.Domain.Entities.Workspace", "Workspace")
+                        .WithMany("Members")
+                        .HasForeignKey("WorkspaceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+
+                    b.Navigation("Workspace");
+                });
+
             modelBuilder.Entity("Planora.Domain.Entities.ApplicationUser", b =>
                 {
                     b.Navigation("AssignedTasks");
+
+                    b.Navigation("BacklogItems");
 
                     b.Navigation("Comments");
 
                     b.Navigation("ManagedProjects");
 
-                    b.Navigation("ProjectMembers");
+                    b.Navigation("OwnedWorkspaces");
+
+                    b.Navigation("ProjectUsers");
+
+                    b.Navigation("ReceivedProjectInvitations");
+
+                    b.Navigation("SentProjectInvitations");
+
+                    b.Navigation("SentWorkspaceInvitations");
+
+                    b.Navigation("WorkspaceUsers");
                 });
 
             modelBuilder.Entity("Planora.Domain.Entities.Project", b =>
                 {
                     b.Navigation("BacklogItems");
 
-                    b.Navigation("Members");
+                    b.Navigation("Invitations");
 
                     b.Navigation("Sprints");
 
                     b.Navigation("Tasks");
+
+                    b.Navigation("Users");
                 });
 
             modelBuilder.Entity("Planora.Domain.Entities.Sprint", b =>
@@ -677,6 +994,15 @@ namespace Planora.Infrastructure.Migrations
             modelBuilder.Entity("Planora.Domain.Entities.TaskItem", b =>
                 {
                     b.Navigation("Comments");
+                });
+
+            modelBuilder.Entity("Planora.Domain.Entities.Workspace", b =>
+                {
+                    b.Navigation("Invitations");
+
+                    b.Navigation("Members");
+
+                    b.Navigation("Projects");
                 });
 #pragma warning restore 612, 618
         }

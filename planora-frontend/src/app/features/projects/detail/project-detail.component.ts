@@ -1,237 +1,125 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, ActivatedRoute } from '@angular/router';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { WorkspaceService } from '../../../core/services/workspace.service';
 import { ProjectService } from '../../../core/services/project.service';
-import { Project } from '../../../core/models';
+import { AuthService } from '../../../core/services/auth.service';
+import { Project, WorkspaceMember } from '../../../core/models';
 import { LoadingComponent } from '../../../shared/components/loading/loading.component';
 
 @Component({
-    selector: 'app-project-detail',
-    imports: [
-        CommonModule, RouterLink, MatCardModule, MatButtonModule,
-        MatIconModule, MatChipsModule, MatProgressBarModule,
-        MatSnackBarModule, LoadingComponent
-    ],
-    template: `
-    <div class="page-container">
-      @if (loading) {
-        <app-loading></app-loading>
-      }
-    
-      @if (!loading && project) {
-        <div class="page-header">
-          <div>
-            <button mat-button [routerLink]="['/projects']" class="back-btn">
-              <mat-icon>arrow_back</mat-icon> Projects
-            </button>
-            <h1>{{ project.name }}</h1>
-            <p class="text-secondary">{{ project.description }}</p>
-          </div>
-        </div>
-        <div class="detail-grid">
-          <!-- Info Card -->
-          <div class="planora-card info-card">
-            <h3 class="section-title">Project Info</h3>
-            <div class="info-list">
-              <div class="info-item">
-                <mat-icon>person</mat-icon>
-                <div>
-                  <div class="info-label">Manager</div>
-                  <div class="info-value">{{ project.projectManagerName }}</div>
-                </div>
-              </div>
-              <div class="info-item">
-                <mat-icon>calendar_today</mat-icon>
-                <div>
-                  <div class="info-label">Start Date</div>
-                  <div class="info-value">{{ project.startDate | date:'mediumDate' }}</div>
-                </div>
-              </div>
-              <div class="info-item">
-                <mat-icon>event</mat-icon>
-                <div>
-                  <div class="info-label">End Date</div>
-                  <div class="info-value">{{ project.endDate | date:'mediumDate' }}</div>
-                </div>
-              </div>
-              <div class="info-item">
-                <mat-icon>task_alt</mat-icon>
-                <div>
-                  <div class="info-label">Tasks</div>
-                  <div class="info-value">{{ project.completedTasks }} / {{ project.totalTasks }} completed</div>
-                </div>
-              </div>
-            </div>
-            <div class="progress-section">
-              <div class="progress-header">
-                <span class="info-label">Progress</span>
-                <span class="progress-pct">{{ project.progressPercentage | number:'1.0-0' }}%</span>
-              </div>
-              <mat-progress-bar mode="determinate" [value]="project.progressPercentage" class="project-bar"></mat-progress-bar>
-            </div>
-          </div>
-          <!-- Team Card -->
-          <div class="planora-card">
-            <h3 class="section-title">Team Members</h3>
-            @if (project.members.length) {
-              <div class="members-list">
-                @for (m of project.members; track m) {
-                  <div class="member-item">
-                    <div class="member-avatar">{{ m.fullName[0] || '?' }}</div>
-                    <div>
-                      <div class="member-name">{{ m.fullName }}</div>
-                      <div class="member-email">{{ m.email }}</div>
-                    </div>
-                  </div>
-                }
-              </div>
-            }
-            @if (!project.members.length) {
-              <div class="empty-state" style="padding: 32px 0">
-                <mat-icon>people_outline</mat-icon>
-                <h3>No members</h3>
-                <p>No team members assigned yet</p>
-              </div>
-            }
-          </div>
-        </div>
-        <!-- Navigation Cards -->
-        <div class="nav-grid">
-          <a class="nav-card" [routerLink]="['/projects', project.id, 'tasks']">
-            <div class="nav-card-icon tasks">
-              <mat-icon>task_alt</mat-icon>
-            </div>
-            <div class="nav-card-body">
-              <div class="nav-card-title">Tasks</div>
-              <div class="nav-card-subtitle">Manage project tasks</div>
-            </div>
-            <mat-icon class="nav-card-arrow">arrow_forward</mat-icon>
-          </a>
-          <a class="nav-card" [routerLink]="['/projects', project.id, 'sprints']">
-            <div class="nav-card-icon sprints">
-              <mat-icon>sprint</mat-icon>
-            </div>
-            <div class="nav-card-body">
-              <div class="nav-card-title">Sprints</div>
-              <div class="nav-card-subtitle">Plan and track sprints</div>
-            </div>
-            <mat-icon class="nav-card-arrow">arrow_forward</mat-icon>
-          </a>
-          <a class="nav-card" [routerLink]="['/projects', project.id, 'backlog']">
-            <div class="nav-card-icon backlog">
-              <mat-icon>list_alt</mat-icon>
-            </div>
-            <div class="nav-card-body">
-              <div class="nav-card-title">Backlog</div>
-              <div class="nav-card-subtitle">View and organize backlog</div>
-            </div>
-            <mat-icon class="nav-card-arrow">arrow_forward</mat-icon>
-          </a>
-        </div>
-      }
-    
-      @if (!loading && !project) {
-        <div class="empty-state" style="padding: 64px">
-          <mat-icon>folder_off</mat-icon>
-          <h3>Project not found</h3>
-        </div>
-      }
-    </div>
-    `,
-    styles: [`
-    .back-btn { color: #6b7280; margin-bottom: 4px; }
-
-    .detail-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-    @media (max-width: 768px) { .detail-grid { grid-template-columns: 1fr; } }
-
-    .section-title { font-size: 0.9375rem; font-weight: 600; color: #374151; margin-bottom: 20px; }
-
-    .info-list { display: flex; flex-direction: column; gap: 16px; margin-bottom: 20px; }
-    .info-item {
-      display: flex; align-items: flex-start; gap: 12px;
-      mat-icon { color: #9ca3af; font-size: 18px; width: 18px; height: 18px; margin-top: 2px; }
-    }
-    .info-label { font-size: 0.75rem; color: #9ca3af; text-transform: uppercase; letter-spacing: .04em; }
-    .info-value { font-size: 0.9375rem; color: #111827; font-weight: 500; margin-top: 2px; }
-
-    .progress-section { margin-top: 8px; }
-    .progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-    .progress-pct { font-size: 0.875rem; font-weight: 600; color: #4f46e5; }
-    .project-bar { height: 8px; border-radius: 4px; }
-
-    .members-list { display: flex; flex-direction: column; gap: 12px; }
-    .member-item { display: flex; align-items: center; gap: 12px; }
-    .member-avatar {
-      width: 36px; height: 36px; border-radius: 50%;
-      background: linear-gradient(135deg, #4f46e5, #06b6d4);
-      color: #fff; font-size: 0.9rem; font-weight: 700;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
-    }
-    .member-name { font-size: 0.9375rem; font-weight: 500; color: #111827; }
-    .member-email { font-size: 0.8125rem; color: #6b7280; }
-
-    .nav-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 16px;
-    }
-    @media (max-width: 768px) { .nav-grid { grid-template-columns: 1fr; } }
-
-    .nav-card {
-      display: flex; align-items: center; gap: 16px;
-      background: #fff; border-radius: 10px; border: 1px solid #e5e7eb;
-      padding: 20px; text-decoration: none; cursor: pointer;
-      transition: box-shadow .15s, border-color .15s;
-      &:hover {
-        box-shadow: 0 4px 6px rgba(0,0,0,.08);
-        border-color: #c7d2fe;
-      }
-    }
-    .nav-card-icon {
-      width: 48px; height: 48px; border-radius: 12px;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
-      mat-icon { font-size: 22px; width: 22px; height: 22px; }
-      &.tasks   { background: #ede9fe; mat-icon { color: #7c3aed; } }
-      &.sprints { background: #d1fae5; mat-icon { color: #059669; } }
-      &.backlog { background: #fef3c7; mat-icon { color: #d97706; } }
-    }
-    .nav-card-body { flex: 1; }
-    .nav-card-title { font-size: 0.9375rem; font-weight: 600; color: #111827; }
-    .nav-card-subtitle { font-size: 0.8125rem; color: #6b7280; margin-top: 2px; }
-    .nav-card-arrow { color: #9ca3af; }
-  `]
+  selector: 'app-project-detail',
+  standalone: true,
+  imports: [
+    CommonModule, RouterLink, MatCardModule, MatButtonModule,
+    MatIconModule, MatChipsModule, MatProgressBarModule, MatFormFieldModule,
+    MatSelectModule, ReactiveFormsModule, MatSnackBarModule, LoadingComponent
+  ],
+  templateUrl: './project-detail.component.html',
+  styleUrls: ['./project-detail.component.css']
 })
 export class ProjectDetailComponent implements OnInit {
   private route = inject(ActivatedRoute);
+  private fb = inject(FormBuilder);
   private projectService = inject(ProjectService);
+  private workspaceService = inject(WorkspaceService);
+  private authService = inject(AuthService);
   private snackBar = inject(MatSnackBar);
 
   loading = true;
   project: Project | null = null;
+  workspaceMembers: WorkspaceMember[] = [];
+  addingMember = false;
+
+  memberForm = this.fb.group({
+    userId: ['', Validators.required]
+  });
+
+  get canManageMembers(): boolean {
+    const currentUserId = this.authService.currentUser?.userId;
+    if (!this.project || !currentUserId) return false;
+    return currentUserId === this.project.projectManagerId || currentUserId === this.project.workspaceOwnerId;
+  }
+
+  get availableWorkspaceMembers(): WorkspaceMember[] {
+    const projectMemberIds = new Set((this.project?.members || []).map(member => member.userId));
+    return this.workspaceMembers.filter(member => !projectMemberIds.has(member.userId));
+  }
 
   ngOnInit(): void {
-    const id = this.route.snapshot.paramMap.get('id')!;
-    this.projectService.getProject(id).subscribe({
+    const projectId = this.route.snapshot.paramMap.get('projectId');
+    if (!projectId || projectId === 'null' || projectId === 'undefined') {
+      this.loading = false;
+      this.snackBar.open('Invalid project id in URL', 'Close', { duration: 3000 });
+      return;
+    }
+
+    this.projectService.getProject(projectId).subscribe({
       next: response => {
         this.loading = false;
-        if (response.success) this.project = response.data;
+        if (response.success) {
+          this.project = response.data;
+          this.loadWorkspaceMembers();
+        }
       },
       error: () => {
         this.loading = false;
         this.snackBar.open('Failed to load project', 'Close', { duration: 3000 });
+      }
+    });
+  }
+
+  trackByUserId(_: number, item: { userId: string }): string {
+    return item.userId;
+  }
+
+  loadWorkspaceMembers(): void {
+    if (!this.project) return;
+
+    this.workspaceService.getMembers(this.project.workspaceId).subscribe({
+      next: response => {
+        if (response.success) {
+          this.workspaceMembers = response.data;
+          if (!this.memberForm.value.userId && this.availableWorkspaceMembers.length > 0) {
+            this.memberForm.patchValue({ userId: this.availableWorkspaceMembers[0].userId });
+          }
+        }
+      },
+      error: () => this.snackBar.open('Failed to load workspace members', 'Close', { duration: 3000 })
+    });
+  }
+
+  addMember(): void {
+    if (!this.project || this.memberForm.invalid) return;
+
+    this.addingMember = true;
+    this.projectService.addMember(this.project.id, this.memberForm.value.userId!).subscribe({
+      next: response => {
+        this.addingMember = false;
+        if (response.success) {
+          this.snackBar.open('Member added to project', 'Close', { duration: 3000 });
+          this.projectService.getProject(this.project!.id).subscribe({
+            next: refreshed => {
+              if (refreshed.success) {
+                this.project = refreshed.data;
+                this.loadWorkspaceMembers();
+              }
+            }
+          });
+        }
+      },
+      error: err => {
+        this.addingMember = false;
+        this.snackBar.open(err?.error?.message || 'Failed to add member', 'Close', { duration: 4000 });
       }
     });
   }

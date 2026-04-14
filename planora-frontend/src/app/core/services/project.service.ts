@@ -1,8 +1,15 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { ApiResponse, PagedResult, Project, CreateProjectRequest } from '../models';
+import {
+  ApiResponse,
+  CreateProjectRequest,
+  PagedResult,
+  Project,
+  ProjectInvitation,
+  ProjectInviteableUser
+} from '../models';
 
 @Injectable({ providedIn: 'root' })
 export class ProjectService {
@@ -15,6 +22,10 @@ export class ProjectService {
   }
 
   getProject(id: string): Observable<ApiResponse<Project>> {
+    if (!id || id === 'null' || id === 'undefined') {
+      return throwError(() => new Error('Invalid project id'));
+    }
+
     return this.http.get<ApiResponse<Project>>(`${this.apiUrl}/${id}`);
   }
 
@@ -36,5 +47,25 @@ export class ProjectService {
 
   removeMember(projectId: string, userId: string): Observable<ApiResponse<boolean>> {
     return this.http.delete<ApiResponse<boolean>>(`${this.apiUrl}/${projectId}/members/${userId}`);
+  }
+
+  getInviteableMembers(projectId: string): Observable<ApiResponse<ProjectInviteableUser[]>> {
+    return this.http.get<ApiResponse<ProjectInviteableUser[]>>(`${this.apiUrl}/${projectId}/inviteable-members`);
+  }
+
+  inviteMember(projectId: string, userId: string): Observable<ApiResponse<ProjectInvitation>> {
+    return this.http.post<ApiResponse<ProjectInvitation>>(`${this.apiUrl}/${projectId}/invitations`, { userId });
+  }
+
+  getPendingInvitations(): Observable<ApiResponse<ProjectInvitation[]>> {
+    return this.http.get<ApiResponse<ProjectInvitation[]>>(`${this.apiUrl}/invitations/pending`);
+  }
+
+  acceptInvitation(invitationId: string): Observable<ApiResponse<boolean>> {
+    return this.http.post<ApiResponse<boolean>>(`${this.apiUrl}/invitations/${invitationId}/accept`, {});
+  }
+
+  rejectInvitation(invitationId: string): Observable<ApiResponse<boolean>> {
+    return this.http.post<ApiResponse<boolean>>(`${this.apiUrl}/invitations/${invitationId}/reject`, {});
   }
 }
