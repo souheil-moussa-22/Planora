@@ -1,5 +1,6 @@
 // Planora.Infrastructure/Services/TaskService.cs
 using AutoMapper;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Planora.Application.DTOs.Common;
 using Planora.Application.DTOs.Tasks;
@@ -15,12 +16,16 @@ public class TaskService : ITaskService
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
     private readonly ApplicationDbContext _dbContext;
+    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IEmailService _emailService;
 
-    public TaskService(IUnitOfWork unitOfWork, IMapper mapper, ApplicationDbContext dbContext)
+    public TaskService(IUnitOfWork unitOfWork, IMapper mapper, ApplicationDbContext dbContext, UserManager<ApplicationUser> userManager, IEmailService emailService)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
         _dbContext = dbContext;
+        _userManager = userManager;
+        _emailService = emailService;
     }
 
     public async Task<PaginatedResultDto<TaskDto>> GetTasksAsync(Guid projectId, int page, int pageSize)
@@ -87,18 +92,26 @@ public class TaskService : ITaskService
         await _unitOfWork.Tasks.AddAsync(task);
         await _unitOfWork.SaveChangesAsync();
 
+        if (!string.IsNullOrWhiteSpace(dto.AssignedToId))
+            await SendTaskAssignedEmailAsync(dto.AssignedToId, task.Title, dto.ProjectId);
+
         return _mapper.Map<TaskDto>(task);
     }
 
     public async Task<TaskDto> UpdateTaskAsync(Guid id, UpdateTaskDto dto, string currentUserId)
     {
         var task = await _unitOfWork.Tasks.GetByIdAsync(id) ?? throw new KeyNotFoundException("Task not found.");
+        var previousAssigneeId = task.AssignedToId;
+
         await EnsureProjectMemberAccessAsync(task.ProjectId, currentUserId);
 
         _mapper.Map(dto, task);
         task.UpdatedAt = DateTime.UtcNow;
         _unitOfWork.Tasks.Update(task);
         await _unitOfWork.SaveChangesAsync();
+
+        if (!string.IsNullOrWhiteSpace(dto.AssignedToId) && dto.AssignedToId != previousAssigneeId)
+            await SendTaskAssignedEmailAsync(dto.AssignedToId, task.Title, task.ProjectId);
 
         return _mapper.Map<TaskDto>(task);
     }
@@ -112,6 +125,22 @@ public class TaskService : ITaskService
         task.UpdatedAt = DateTime.UtcNow;
         _unitOfWork.Tasks.Update(task);
         await _unitOfWork.SaveChangesAsync();
+    }
+
+    private async Task SendTaskAssignedEmailAsync(string assigneeId, string taskTitle, Guid projectId)
+    {
+        var assignee = await _userManager.FindByIdAsync(assigneeId);
+        if (assignee == null || string.IsNullOrWhiteSpace(assignee.Email))
+            return;
+
+        var projectName = await _dbContext.Projects
+            .Where(p => p.Id == projectId)
+            .Select(p => p.Name)
+            .FirstOrDefaultAsync() ?? string.Empty;
+
+        var assigneeName = $"{assignee.FirstName} {assignee.LastName}".Trim();
+
+        await _emailService.SendTaskAssignedAsync(assignee.Email, assigneeName, taskTitle, projectName);
     }
 
     private async Task EnsureProjectMemberAccessAsync(Guid projectId, string userId)

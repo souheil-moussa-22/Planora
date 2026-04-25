@@ -16,13 +16,15 @@ public class ProjectService : IProjectService
     private readonly IMapper _mapper;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly ApplicationDbContext _dbContext;
+    private readonly IEmailService _emailService;
 
-    public ProjectService(IUnitOfWork unitOfWork, IMapper mapper, UserManager<ApplicationUser> userManager, ApplicationDbContext dbContext)
+    public ProjectService(IUnitOfWork unitOfWork, IMapper mapper, UserManager<ApplicationUser> userManager, ApplicationDbContext dbContext, IEmailService emailService)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
         _userManager = userManager;
         _dbContext = dbContext;
+        _emailService = emailService;
     }
 
     public async Task<PaginatedResultDto<ProjectDto>> GetProjectsAsync(string userId, int page, int pageSize, string? search = null)
@@ -347,16 +349,21 @@ public class ProjectService : IProjectService
         await _dbContext.SaveChangesAsync();
 
         var invitedByUser = await _userManager.FindByIdAsync(userId);
+        var inviterName = $"{invitedByUser?.FirstName} {invitedByUser?.LastName}".Trim();
+        var targetName = $"{targetUser.FirstName} {targetUser.LastName}".Trim();
+        if (!string.IsNullOrWhiteSpace(targetUser.Email))
+            await _emailService.SendProjectInvitationAsync(targetUser.Email, targetName, project.Name, inviterName);
+
         return new ProjectInvitationDto
         {
             Id = invitation.Id,
             ProjectId = projectId,
             ProjectName = project.Name,
             UserId = targetUser.Id,
-            UserFullName = $"{targetUser.FirstName} {targetUser.LastName}",
+            UserFullName = targetName,
             UserEmail = targetUser.Email ?? string.Empty,
             InvitedByUserId = userId,
-            InvitedByFullName = $"{invitedByUser?.FirstName} {invitedByUser?.LastName}",
+            InvitedByFullName = inviterName,
             ExpiresAt = invitation.ExpiresAt,
             Accepted = false,
             CreatedAt = invitation.CreatedAt
