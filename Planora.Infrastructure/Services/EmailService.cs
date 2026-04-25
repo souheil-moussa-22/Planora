@@ -20,10 +20,10 @@ public class EmailService : IEmailService
 
     public async Task SendWorkspaceInvitationAsync(string toEmail, string workspaceName, string inviterName)
     {
-        var subject = $"You've been invited to join the workspace \"{workspaceName}\"";
+        var subject = $"You've been invited to join the workspace \"{WebUtility.HtmlEncode(workspaceName)}\"";
         var body = $@"<html><body>
 <p>Hello,</p>
-<p><strong>{inviterName}</strong> has invited you to join the workspace <strong>{workspaceName}</strong> on Planora.</p>
+<p><strong>{WebUtility.HtmlEncode(inviterName)}</strong> has invited you to join the workspace <strong>{WebUtility.HtmlEncode(workspaceName)}</strong> on Planora.</p>
 <p>Log in to your Planora account to view and accept the invitation.</p>
 <p>The invitation will expire in 7 days.</p>
 <br/>
@@ -35,10 +35,10 @@ public class EmailService : IEmailService
 
     public async Task SendProjectInvitationAsync(string toEmail, string toName, string projectName, string inviterName)
     {
-        var subject = $"You've been invited to join the project \"{projectName}\"";
+        var subject = $"You've been invited to join the project \"{WebUtility.HtmlEncode(projectName)}\"";
         var body = $@"<html><body>
-<p>Hello {toName},</p>
-<p><strong>{inviterName}</strong> has invited you to join the project <strong>{projectName}</strong> on Planora.</p>
+<p>Hello {WebUtility.HtmlEncode(toName)},</p>
+<p><strong>{WebUtility.HtmlEncode(inviterName)}</strong> has invited you to join the project <strong>{WebUtility.HtmlEncode(projectName)}</strong> on Planora.</p>
 <p>Log in to your Planora account to view and accept the invitation.</p>
 <p>The invitation will expire in 7 days.</p>
 <br/>
@@ -50,10 +50,10 @@ public class EmailService : IEmailService
 
     public async Task SendTaskAssignedAsync(string toEmail, string toName, string taskTitle, string projectName)
     {
-        var subject = $"You have been assigned to a task in \"{projectName}\"";
+        var subject = $"You have been assigned to a task in \"{WebUtility.HtmlEncode(projectName)}\"";
         var body = $@"<html><body>
-<p>Hello {toName},</p>
-<p>You have been assigned to the task <strong>{taskTitle}</strong> in the project <strong>{projectName}</strong> on Planora.</p>
+<p>Hello {WebUtility.HtmlEncode(toName)},</p>
+<p>You have been assigned to the task <strong>{WebUtility.HtmlEncode(taskTitle)}</strong> in the project <strong>{WebUtility.HtmlEncode(projectName)}</strong> on Planora.</p>
 <p>Log in to your Planora account to view the task details.</p>
 <br/>
 <p>The Planora Team</p>
@@ -66,7 +66,7 @@ public class EmailService : IEmailService
     {
         if (string.IsNullOrWhiteSpace(_settings.SmtpHost))
         {
-            _logger.LogWarning("Email not sent to {ToEmail}: SMTP host is not configured.", toEmail);
+            _logger.LogWarning("Email not sent: SMTP host is not configured.");
             return;
         }
 
@@ -90,11 +90,11 @@ public class EmailService : IEmailService
             message.To.Add(toEmail);
 
             await client.SendMailAsync(message);
-            _logger.LogInformation("Email sent to {ToEmail} with subject: {Subject}", toEmail, subject);
+            _logger.LogInformation("Email sent successfully with subject: {Subject}", subject);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to send email to {ToEmail} with subject: {Subject}", toEmail, subject);
+            _logger.LogError(ex, "Failed to send email with subject: {Subject}", subject);
         }
     }
 }

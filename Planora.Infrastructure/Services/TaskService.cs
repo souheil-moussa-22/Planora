@@ -133,8 +133,11 @@ public class TaskService : ITaskService
         if (assignee == null || string.IsNullOrWhiteSpace(assignee.Email))
             return;
 
-        var project = await _dbContext.Projects.FirstOrDefaultAsync(p => p.Id == projectId);
-        var projectName = project?.Name ?? string.Empty;
+        var projectName = await _dbContext.Projects
+            .Where(p => p.Id == projectId)
+            .Select(p => p.Name)
+            .FirstOrDefaultAsync() ?? string.Empty;
+
         var assigneeName = $"{assignee.FirstName} {assignee.LastName}".Trim();
 
         await _emailService.SendTaskAssignedAsync(assignee.Email, assigneeName, taskTitle, projectName);
