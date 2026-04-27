@@ -101,6 +101,7 @@ export interface CreateProjectRequest {
   startDate: string;
   endDate: string;
   projectManagerId: string;
+  color?: string;
 }
 
 export interface Workspace {
