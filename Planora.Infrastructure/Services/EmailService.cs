@@ -77,12 +77,14 @@ public class EmailService : IEmailService
         }
 
         var senderEmail = string.IsNullOrWhiteSpace(_settings.SenderEmail)
+            // Gmail requires the From address to match the authenticated account;
+            // fall back to Username when SenderEmail is not explicitly configured.
             ? _settings.Username
             : _settings.SenderEmail;
 
         _logger.LogInformation(
-            "Sending email to {ToEmail} with subject: {Subject} via {SmtpHost}:{SmtpPort}",
-            toEmail, subject, _settings.SmtpHost, _settings.SmtpPort);
+            "Sending email with subject: {Subject} via {SmtpHost}:{SmtpPort}",
+            subject, _settings.SmtpHost, _settings.SmtpPort);
 
         try
         {
@@ -105,20 +107,20 @@ public class EmailService : IEmailService
 
             await client.SendMailAsync(message);
             _logger.LogInformation(
-                "Email sent successfully to {ToEmail} with subject: {Subject}",
-                toEmail, subject);
+                "Email sent successfully with subject: {Subject}",
+                subject);
         }
         catch (SmtpException ex)
         {
             _logger.LogError(ex,
-                "SMTP error sending email to {ToEmail} with subject: {Subject}. StatusCode: {StatusCode}",
-                toEmail, subject, ex.StatusCode);
+                "SMTP error sending email with subject: {Subject}. StatusCode: {StatusCode}",
+                subject, ex.StatusCode);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex,
-                "Unexpected error sending email to {ToEmail} with subject: {Subject}",
-                toEmail, subject);
+                "Unexpected error sending email with subject: {Subject}",
+                subject);
         }
     }
 }

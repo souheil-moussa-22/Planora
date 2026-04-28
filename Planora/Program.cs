@@ -9,19 +9,17 @@ using Serilog;
 using System;
 using System.Threading.Tasks;
 
-// Configure Serilog
+// Configure Serilog – settings (sinks, log levels) are read from the "Serilog" section in appsettings.json.
+// A minimal bootstrap logger is created first so startup errors are captured before configuration is loaded.
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
-    .WriteTo.File("logs/planora-.txt", rollingInterval: RollingInterval.Day)
     .CreateLogger();
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Use Serilog, reading settings from appsettings.json "Serilog" section
+// Replace the bootstrap logger with the fully-configured Serilog pipeline from appsettings.json.
 builder.Host.UseSerilog((context, loggerConfig) =>
-    loggerConfig.ReadFrom.Configuration(context.Configuration)
-                .WriteTo.Console()
-                .WriteTo.File("logs/planora-.txt", rollingInterval: RollingInterval.Day));
+    loggerConfig.ReadFrom.Configuration(context.Configuration));
 
 // Add services
 builder.Services.AddControllers();
