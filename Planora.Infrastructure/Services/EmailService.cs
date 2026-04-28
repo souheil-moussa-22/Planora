@@ -70,6 +70,20 @@ public class EmailService : IEmailService
             return;
         }
 
+        if (string.IsNullOrWhiteSpace(_settings.Username) || string.IsNullOrWhiteSpace(_settings.Password))
+        {
+            _logger.LogWarning("Email not sent: SMTP credentials (Username or Password) are not configured.");
+            return;
+        }
+
+        var senderEmail = string.IsNullOrWhiteSpace(_settings.SenderEmail)
+            ? _settings.Username
+            : _settings.SenderEmail;
+
+        _logger.LogInformation(
+            "Sending email to {ToEmail} with subject: {Subject} via {SmtpHost}:{SmtpPort}",
+            toEmail, subject, _settings.SmtpHost, _settings.SmtpPort);
+
         try
         {
             using var client = new SmtpClient(_settings.SmtpHost, _settings.SmtpPort)
@@ -82,7 +96,7 @@ public class EmailService : IEmailService
 
             using var message = new MailMessage
             {
-                From = new MailAddress(_settings.SenderEmail, _settings.SenderName),
+                From = new MailAddress(senderEmail, _settings.SenderName),
                 Subject = subject,
                 Body = htmlBody,
                 IsBodyHtml = true
@@ -90,11 +104,21 @@ public class EmailService : IEmailService
             message.To.Add(toEmail);
 
             await client.SendMailAsync(message);
-            _logger.LogInformation("Email sent successfully with subject: {Subject}", subject);
+            _logger.LogInformation(
+                "Email sent successfully to {ToEmail} with subject: {Subject}",
+                toEmail, subject);
+        }
+        catch (SmtpException ex)
+        {
+            _logger.LogError(ex,
+                "SMTP error sending email to {ToEmail} with subject: {Subject}. StatusCode: {StatusCode}",
+                toEmail, subject, ex.StatusCode);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to send email with subject: {Subject}", subject);
+            _logger.LogError(ex,
+                "Unexpected error sending email to {ToEmail} with subject: {Subject}",
+                toEmail, subject);
         }
     }
 }

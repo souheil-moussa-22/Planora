@@ -17,8 +17,11 @@ Log.Logger = new LoggerConfiguration()
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Use Serilog
-builder.Host.UseSerilog();
+// Use Serilog, reading settings from appsettings.json "Serilog" section
+builder.Host.UseSerilog((context, loggerConfig) =>
+    loggerConfig.ReadFrom.Configuration(context.Configuration)
+                .WriteTo.Console()
+                .WriteTo.File("logs/planora-.txt", rollingInterval: RollingInterval.Day));
 
 // Add services
 builder.Services.AddControllers();
