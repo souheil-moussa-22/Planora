@@ -132,7 +132,7 @@ public class EmailService : IEmailService
         var encodedProject = WebUtility.HtmlEncode(projectName);
         var encodedAssigner = WebUtility.HtmlEncode(assignerName);
 
-        var subject = $"You've been assigned to a task in '{projectName}' on Planora";
+        var subject = $"You've been assigned to a task in '{encodedProject}' on Planora";
         var body = $"""
             <html>
             <body style="font-family: Arial, sans-serif; color: #333;">

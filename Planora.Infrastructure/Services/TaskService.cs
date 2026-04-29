@@ -1,6 +1,7 @@
 using AutoMapper;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Planora.Application.DTOs.Common;
 using Planora.Application.DTOs.Tasks;
 using Planora.Application.Interfaces;
@@ -17,14 +18,16 @@ public class TaskService : ITaskService
     private readonly ApplicationDbContext _dbContext;
     private readonly IEmailService _emailService;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly ILogger<TaskService> _logger;
 
-    public TaskService(IUnitOfWork unitOfWork, IMapper mapper, ApplicationDbContext dbContext, IEmailService emailService, UserManager<ApplicationUser> userManager)
+    public TaskService(IUnitOfWork unitOfWork, IMapper mapper, ApplicationDbContext dbContext, IEmailService emailService, UserManager<ApplicationUser> userManager, ILogger<TaskService> logger)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
         _dbContext = dbContext;
         _emailService = emailService;
         _userManager = userManager;
+        _logger = logger;
     }
 
     public async Task<PaginatedResultDto<TaskDto>> GetTasksAsync(Guid projectId, int page, int pageSize)
@@ -136,8 +139,23 @@ public class TaskService : ITaskService
         var assigner = await _userManager.FindByIdAsync(assignerUserId);
         var project = await _dbContext.Projects.FindAsync(projectId);
 
-        if (assignee?.Email == null || assigner == null || project == null)
+        if (assignee?.Email == null)
+        {
+            _logger.LogWarning("Cannot send task assignment email: assignee with ID {AssignedToId} not found or has no email.", assignedToId);
             return;
+        }
+
+        if (assigner == null)
+        {
+            _logger.LogWarning("Cannot send task assignment email: assigner with ID {AssignerUserId} not found.", assignerUserId);
+            return;
+        }
+
+        if (project == null)
+        {
+            _logger.LogWarning("Cannot send task assignment email: project with ID {ProjectId} not found.", projectId);
+            return;
+        }
 
         await _emailService.SendTaskAssignmentAsync(
             assignee.Email,
