@@ -1,6 +1,7 @@
 using AutoMapper;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Planora.Application.DTOs.Common;
 using Planora.Application.DTOs.Projects;
 using Planora.Application.Interfaces;
@@ -17,14 +18,16 @@ public class ProjectService : IProjectService
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly ApplicationDbContext _dbContext;
     private readonly IEmailService _emailService;
+    private readonly ILogger<ProjectService> _logger;
 
-    public ProjectService(IUnitOfWork unitOfWork, IMapper mapper, UserManager<ApplicationUser> userManager, ApplicationDbContext dbContext, IEmailService emailService)
+    public ProjectService(IUnitOfWork unitOfWork, IMapper mapper, UserManager<ApplicationUser> userManager, ApplicationDbContext dbContext, IEmailService emailService, ILogger<ProjectService> logger)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
         _userManager = userManager;
         _dbContext = dbContext;
         _emailService = emailService;
+        _logger = logger;
     }
 
     public async Task<PaginatedResultDto<ProjectDto>> GetProjectsAsync(string userId, int page, int pageSize, string? search = null)
@@ -353,7 +356,16 @@ public class ProjectService : IProjectService
         var inviterFullName = $"{invitedByUser.FirstName} {invitedByUser.LastName}";
         var targetEmail = targetUser.Email ?? string.Empty;
         if (!string.IsNullOrWhiteSpace(targetEmail))
-            await _emailService.SendProjectInvitationAsync(targetEmail, inviterFullName, project.Name);
+        {
+            try
+            {
+                await _emailService.SendProjectInvitationAsync(targetEmail, inviterFullName, project.Name);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to send project invitation email to {Email}. Invitation was saved successfully.", targetEmail);
+            }
+        }
 
         return new ProjectInvitationDto
         {
