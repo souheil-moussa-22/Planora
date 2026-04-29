@@ -242,6 +242,31 @@ public class ProjectService : IProjectService
 
         await _unitOfWork.ProjectUsers.AddAsync(member);
         await _unitOfWork.SaveChangesAsync();
+
+        var actingUser = await _userManager.FindByIdAsync(currentUserId);
+        var addedByName = actingUser != null
+            ? $"{actingUser.FirstName} {actingUser.LastName}".Trim()
+            : string.Empty;
+
+        var targetEmail = targetUser.Email ?? string.Empty;
+        if (!string.IsNullOrWhiteSpace(targetEmail))
+        {
+            _logger.LogInformation("Sending project membership email for project {ProjectId} to user {UserId}.", projectId, targetUser.Id);
+            try
+            {
+                await _emailService.SendProjectMemberAddedAsync(
+                    targetEmail,
+                    targetUser.FullName,
+                    project.Name,
+                    project.Workspace.Name,
+                    addedByName);
+                _logger.LogInformation("Project membership email sent successfully for project {ProjectId}.", projectId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to send project membership email for project {ProjectId}.", projectId);
+            }
+        }
     }
 
     public async Task RemoveMemberAsync(Guid projectId, string userIdToRemove, string currentUserId)
