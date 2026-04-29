@@ -132,12 +132,29 @@ public class TaskService : ITaskService
     private async Task TrySendTaskAssignmentEmailAsync(TaskItem task, Guid projectId)
     {
         var assignedToId = task.AssignedToId;
+
+        _logger.LogInformation(
+            "TrySendTaskAssignmentEmailAsync invoked for task {TaskId} (project {ProjectId}, assignee {AssigneeId}).",
+            task.Id, projectId, assignedToId ?? "(none)");
+
         if (string.IsNullOrWhiteSpace(assignedToId))
+        {
+            _logger.LogInformation("Task {TaskId} has no assignee — skipping assignment email.", task.Id);
             return;
+        }
 
         var assignedUser = await _userManager.FindByIdAsync(assignedToId);
-        if (assignedUser == null || string.IsNullOrWhiteSpace(assignedUser.Email))
+        if (assignedUser == null)
+        {
+            _logger.LogWarning("Task {TaskId}: assignee user {AssigneeId} not found — skipping assignment email.", task.Id, assignedToId);
             return;
+        }
+
+        if (string.IsNullOrWhiteSpace(assignedUser.Email))
+        {
+            _logger.LogWarning("Task {TaskId}: assignee {AssigneeId} has no email address — skipping assignment email.", task.Id, assignedToId);
+            return;
+        }
 
         var project = await _dbContext.Projects
             .Include(p => p.ProjectManager)
@@ -145,29 +162,36 @@ public class TaskService : ITaskService
             .FirstOrDefaultAsync(p => p.Id == projectId);
 
         if (project == null)
+        {
+            _logger.LogWarning("Task {TaskId}: project {ProjectId} not found — skipping assignment email.", task.Id, projectId);
             return;
+        }
 
         var pmName = project.ProjectManager != null
             ? $"{project.ProjectManager.FirstName} {project.ProjectManager.LastName}".Trim()
             : string.Empty;
 
-        _logger.LogInformation("Sending task assignment email for task {TaskId} to user {UserId}.", task.Id, task.AssignedToId);
+        _logger.LogInformation(
+            "Sending task assignment email for task {TaskId} to {Email} (project '{ProjectName}', PM '{PmName}').",
+            task.Id, assignedUser.Email, project.Name, pmName);
+
         try
         {
             await _emailService.SendTaskAssignmentAsync(
                 assignedUser.Email,
                 assignedUser.FullName,
                 task.Title,
-                task.Description,
+                task.Description ?? string.Empty,
                 task.DueDate,
                 task.Priority.ToString(),
                 project.Name,
                 pmName);
-            _logger.LogInformation("Task assignment email sent successfully for task {TaskId}.", task.Id);
+
+            _logger.LogInformation("Task assignment email sent successfully for task {TaskId} to {Email}.", task.Id, assignedUser.Email);
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to send task assignment email for task {TaskId}.", task.Id);
+            _logger.LogWarning(ex, "Failed to send task assignment email for task {TaskId} to {Email}. Task operation is unaffected.", task.Id, assignedUser.Email);
         }
     }
 

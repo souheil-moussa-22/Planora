@@ -22,12 +22,18 @@ public class EmailService : IEmailService
 
     public async Task SendEmailAsync(string to, string subject, string htmlBody)
     {
-        if (string.IsNullOrWhiteSpace(_settings.SmtpHost) ||
-            string.IsNullOrWhiteSpace(_settings.SmtpUsername) ||
-            string.IsNullOrWhiteSpace(_settings.SmtpPassword) ||
-            string.IsNullOrWhiteSpace(_settings.SenderEmail))
+        var missingFields = new List<string>();
+        if (string.IsNullOrWhiteSpace(_settings.SmtpHost))     missingFields.Add(nameof(_settings.SmtpHost));
+        if (string.IsNullOrWhiteSpace(_settings.SmtpUsername)) missingFields.Add(nameof(_settings.SmtpUsername));
+        if (string.IsNullOrWhiteSpace(_settings.SmtpPassword)) missingFields.Add(nameof(_settings.SmtpPassword));
+        if (string.IsNullOrWhiteSpace(_settings.SenderEmail))  missingFields.Add(nameof(_settings.SenderEmail));
+
+        if (missingFields.Count > 0)
         {
-            _logger.LogWarning("Email settings are not configured. Skipping outbound email.");
+            _logger.LogWarning(
+                "Email not sent: the following EmailSettings fields are empty or missing: {MissingFields}. " +
+                "Set them via environment variables (e.g. EmailSettings__SmtpUsername) or user secrets.",
+                string.Join(", ", missingFields));
             return;
         }
 
@@ -46,13 +52,19 @@ public class EmailService : IEmailService
                 ? SecureSocketOptions.StartTls
                 : SecureSocketOptions.None;
 
+            _logger.LogInformation(
+                "Connecting to SMTP host {SmtpHost}:{SmtpPort} (SSL={EnableSsl}) to send email to {To}.",
+                _settings.SmtpHost, _settings.SmtpPort, _settings.EnableSsl, to);
+
             await client.ConnectAsync(_settings.SmtpHost, _settings.SmtpPort, secureSocketOptions);
             await client.AuthenticateAsync(_settings.SmtpUsername, _settings.SmtpPassword);
             await client.SendAsync(message);
+
+            _logger.LogInformation("Email '{Subject}' delivered successfully to {To}.", subject, to);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to send email via SMTP host {SmtpHost}.", _settings.SmtpHost);
+            _logger.LogError(ex, "Failed to send email '{Subject}' to {To} via SMTP host {SmtpHost}.", subject, to, _settings.SmtpHost);
             throw;
         }
         finally
@@ -127,6 +139,10 @@ public class EmailService : IEmailService
 
     public async Task SendTaskAssignmentAsync(string toEmail, string memberName, string taskTitle, string taskDescription, DateTime? dueDate, string priority, string projectName, string projectManagerName)
     {
+        _logger.LogInformation(
+            "Building task assignment email for '{TaskTitle}' → {ToEmail} (project '{ProjectName}').",
+            taskTitle, toEmail, projectName);
+
         var encodedMember = WebUtility.HtmlEncode(memberName);
         var encodedTitle = WebUtility.HtmlEncode(taskTitle);
         var encodedDescription = WebUtility.HtmlEncode(taskDescription);
