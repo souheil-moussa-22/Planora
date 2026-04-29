@@ -141,7 +141,7 @@ public class EmailService : IEmailService
             <body style="font-family: Arial, sans-serif; color: #333;">
               <h2>New Task Assigned</h2>
               <p>Hello <strong>{encodedMember}</strong>,</p>
-              <p><strong>{encodedManager}</strong> has assigned a new task to you in the project <strong>{encodedProject}</strong>.</p>
+              <p>A new task has been assigned to you in the project <strong>{encodedProject}</strong> (managed by <strong>{encodedManager}</strong>).</p>
               <table style="border-collapse: collapse; width: 100%; margin-top: 12px;">
                 <tr>
                   <td style="padding: 8px; font-weight: bold; width: 140px;">Task</td>

@@ -131,7 +131,11 @@ public class TaskService : ITaskService
 
     private async Task TrySendTaskAssignmentEmailAsync(TaskItem task, Guid projectId)
     {
-        var assignedUser = await _userManager.FindByIdAsync(task.AssignedToId!);
+        var assignedToId = task.AssignedToId;
+        if (string.IsNullOrWhiteSpace(assignedToId))
+            return;
+
+        var assignedUser = await _userManager.FindByIdAsync(assignedToId);
         if (assignedUser == null || string.IsNullOrWhiteSpace(assignedUser.Email))
             return;
 
