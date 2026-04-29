@@ -363,7 +363,7 @@ public class ProjectService : IProjectService
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to send project invitation email to {Email}. Invitation was saved successfully.", targetEmail);
+                _logger.LogWarning(ex, "Failed to send project invitation email. Invitation was saved successfully.");
             }
         }
 

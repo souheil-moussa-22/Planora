@@ -51,7 +51,7 @@ public class AuthService : IAuthService
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to send welcome email to {Email}. Registration will proceed.", dto.Email);
+            _logger.LogWarning(ex, "Failed to send welcome email. Registration will proceed.");
         }
 
         return await IssueTokensAsync(user);
