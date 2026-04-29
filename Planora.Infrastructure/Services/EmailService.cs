@@ -124,4 +124,26 @@ public class EmailService : IEmailService
 
         await SendEmailAsync(toEmail, subject, body);
     }
+
+    public async Task SendTaskAssignmentAsync(string toEmail, string assigneeName, string taskTitle, string projectName, string assignerName)
+    {
+        var encodedAssignee = WebUtility.HtmlEncode(assigneeName);
+        var encodedTask = WebUtility.HtmlEncode(taskTitle);
+        var encodedProject = WebUtility.HtmlEncode(projectName);
+        var encodedAssigner = WebUtility.HtmlEncode(assignerName);
+
+        var subject = $"You've been assigned to a task in '{projectName}' on Planora";
+        var body = $"""
+            <html>
+            <body style="font-family: Arial, sans-serif; color: #333;">
+              <h2>New Task Assignment</h2>
+              <p>Hello <strong>{encodedAssignee}</strong>,</p>
+              <p><strong>{encodedAssigner}</strong> has assigned you to the task <strong>{encodedTask}</strong> in the project <strong>{encodedProject}</strong> on Planora.</p>
+              <p>Log in to your Planora account to view the task details.</p>
+            </body>
+            </html>
+            """;
+
+        await SendEmailAsync(toEmail, subject, body);
+    }
 }

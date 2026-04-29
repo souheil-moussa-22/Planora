@@ -6,4 +6,5 @@ public interface IEmailService
     Task SendWorkspaceInvitationAsync(string toEmail, string inviterName, string workspaceName, string role);
     Task SendProjectInvitationAsync(string toEmail, string inviterName, string projectName);
     Task SendWelcomeEmailAsync(string toEmail, string fullName);
+    Task SendTaskAssignmentAsync(string toEmail, string assigneeName, string taskTitle, string projectName, string assignerName);
 }
