@@ -239,6 +239,16 @@ public class ProjectService : IProjectService
 
         await _unitOfWork.ProjectUsers.AddAsync(member);
         await _unitOfWork.SaveChangesAsync();
+
+        var adder = await _userManager.FindByIdAsync(currentUserId);
+        if (targetUser.Email != null && adder != null)
+        {
+            await _emailService.SendProjectMemberAddedAsync(
+                targetUser.Email,
+                targetUser.FullName,
+                project.Name,
+                adder.FullName);
+        }
     }
 
     public async Task RemoveMemberAsync(Guid projectId, string userIdToRemove, string currentUserId)

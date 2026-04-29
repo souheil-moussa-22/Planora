@@ -146,4 +146,25 @@ public class EmailService : IEmailService
 
         await SendEmailAsync(toEmail, subject, body);
     }
+
+    public async Task SendProjectMemberAddedAsync(string toEmail, string memberName, string projectName, string adderName)
+    {
+        var encodedMember = WebUtility.HtmlEncode(memberName);
+        var encodedProject = WebUtility.HtmlEncode(projectName);
+        var encodedAdder = WebUtility.HtmlEncode(adderName);
+
+        var subject = $"You've been added to the '{encodedProject}' project on Planora";
+        var body = $"""
+            <html>
+            <body style="font-family: Arial, sans-serif; color: #333;">
+              <h2>Project Membership</h2>
+              <p>Hello <strong>{encodedMember}</strong>,</p>
+              <p><strong>{encodedAdder}</strong> has added you as a member of the project <strong>{encodedProject}</strong> on Planora.</p>
+              <p>Log in to your Planora account to view the project.</p>
+            </body>
+            </html>
+            """;
+
+        await SendEmailAsync(toEmail, subject, body);
+    }
 }
