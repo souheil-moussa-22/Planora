@@ -249,7 +249,7 @@ public class WorkspaceService : IWorkspaceService
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to send workspace invitation email. Invitation was saved successfully.");
+            _logger.LogWarning(ex, "Failed to send workspace invitation email for invitation {InvitationId}. Invitation was saved successfully.", invitation.Id);
         }
 
         invitation.Workspace = workspace;
