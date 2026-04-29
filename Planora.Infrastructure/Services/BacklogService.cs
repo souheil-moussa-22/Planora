@@ -264,7 +264,7 @@ public class BacklogService : IBacklogService
             ? $"{project.ProjectManager.FirstName} {project.ProjectManager.LastName}".Trim()
             : string.Empty;
 
-        _logger.LogInformation("Sending backlog item assignment email for item {ItemId} to user {UserId}.", backlogItem.Id, backlogItem.AssignedToId);
+        _logger.LogInformation("Sending backlog item assignment email for item {ItemId}.", backlogItem.Id);
         try
         {
             await _emailService.SendTaskAssignmentAsync(
