@@ -348,8 +348,9 @@ public class ProjectService : IProjectService
         await _dbContext.ProjectInvitations.AddAsync(invitation);
         await _dbContext.SaveChangesAsync();
 
-        var invitedByUser = await _userManager.FindByIdAsync(userId);
-        var inviterFullName = $"{invitedByUser?.FirstName} {invitedByUser?.LastName}";
+        var invitedByUser = await _userManager.FindByIdAsync(userId)
+            ?? throw new KeyNotFoundException("Inviting user not found.");
+        var inviterFullName = $"{invitedByUser.FirstName} {invitedByUser.LastName}";
         var targetEmail = targetUser.Email ?? string.Empty;
         if (!string.IsNullOrWhiteSpace(targetEmail))
             await _emailService.SendProjectInvitationAsync(targetEmail, inviterFullName, project.Name);

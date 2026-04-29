@@ -67,7 +67,7 @@ public class EmailService : IEmailService
         var encodedWorkspace = WebUtility.HtmlEncode(workspaceName);
         var encodedRole = WebUtility.HtmlEncode(role);
 
-        var subject = $"You've been invited to join the '{encodedWorkspace}' workspace on Planora";
+        var subject = $"You've been invited to join the '{workspaceName}' workspace on Planora";
         var body = $"""
             <html>
             <body style="font-family: Arial, sans-serif; color: #333;">
@@ -89,7 +89,7 @@ public class EmailService : IEmailService
         var encodedInviter = WebUtility.HtmlEncode(inviterName);
         var encodedProject = WebUtility.HtmlEncode(projectName);
 
-        var subject = $"You've been invited to join the '{encodedProject}' project on Planora";
+        var subject = $"You've been invited to join the '{projectName}' project on Planora";
         var body = $"""
             <html>
             <body style="font-family: Arial, sans-serif; color: #333;">
